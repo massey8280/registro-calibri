@@ -10,88 +10,87 @@
 <link rel="apple-touch-icon" href="./icon-192.png">
 <style>
 :root{
-  --ink:#0F1B2D; --paper:#FFFFFF; --field:#EEF2F7; --line:#B9C3D1; --muted:#4E5A6B;
+  --ink:#0F1B2D; --paper:#FFFFFF; --field:#EEF2F7; --line:#C4CCD8; --muted:#4E5A6B;
   --azione:#0B5FA5; --salva:#1B7A3D; --avviso:#B3261E; --stima:#8A5A00;
   --grossa:#0F1B2D; --mezzana:#0B5FA5; --semina:#12706F; --mista:#7A3E9D;
-  --tap:56px; --r:10px;
+  --fs:16px; --tap:46px; --chip:38px; --calh:46px; --calfs:15px; --calcols:4; --h2m:14px; --pad:10px; --key:54px; --r:8px;
 }
+body.barca{ --fs:18px; --tap:56px; --chip:48px; --calh:64px; --calfs:20px; --calcols:2; --h2m:20px; --pad:14px; --key:64px; --r:10px; }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;background:var(--paper);color:var(--ink);font:18px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;touch-action:manipulation}
-body{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
-body.has-bar{padding-bottom:calc(170px + env(safe-area-inset-bottom))}
-h1{font-size:22px;margin:0;font-weight:800}
-h2{font-size:17px;font-weight:600;margin:22px 0 8px;color:var(--muted)}
+html,body{margin:0;background:var(--paper);color:var(--ink);font:var(--fs)/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;touch-action:manipulation}
+body{padding-bottom:calc(70px + env(safe-area-inset-bottom))}
+body.has-bar{padding-bottom:calc(140px + env(safe-area-inset-bottom))}
+h1{font-size:18px;margin:0;font-weight:800}
+h2{font-size:14px;font-weight:600;margin:var(--h2m) 0 6px;color:var(--muted)}
 b{font-weight:700}
-button{font:inherit;color:inherit;border:2px solid var(--line);background:var(--paper);border-radius:var(--r);min-height:var(--tap);padding:0 14px;cursor:pointer;text-align:center}
+button{font:inherit;color:inherit;border:2px solid var(--line);background:var(--paper);border-radius:var(--r);min-height:var(--tap);padding:0 12px;cursor:pointer;text-align:center;line-height:1.15}
 button:active{transform:scale(.98)}
 button:focus-visible{outline:3px solid var(--azione);outline-offset:2px}
 button.on{border-color:var(--ink);background:var(--ink);color:#fff}
 button.primary{background:var(--azione);border-color:var(--azione);color:#fff;font-weight:600}
-button.salva{background:var(--salva);border-color:var(--salva);color:#fff;font-weight:700;font-size:20px}
-button.ghost{border-color:transparent;background:transparent;color:var(--azione);font-weight:600}
+button.salva{background:var(--salva);border-color:var(--salva);color:#fff;font-weight:700}
+button.ghost{border-color:transparent;background:transparent;color:var(--azione);font-weight:600;padding:0 8px}
 button.danger{color:var(--avviso)}
-.wrap{padding:14px 14px 0;max-width:640px;margin:0 auto}
-header.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:3px solid var(--ink);position:sticky;top:0;background:var(--paper);z-index:5}
-.badge{font-size:14px;color:var(--muted);text-align:right}
+button.mini{min-height:32px;padding:0 8px;font-size:14px;border-radius:16px}
+.wrap{padding:10px 12px 0;max-width:640px;margin:0 auto}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border-bottom:3px solid var(--ink);position:sticky;top:0;background:var(--paper);z-index:5}
+.badge{font-size:13px;color:var(--muted);white-space:nowrap}
 .view{display:none}.view.on{display:block}
-.row{display:flex;gap:8px;flex-wrap:wrap}
+.row{display:flex;gap:6px;flex-wrap:wrap}
 .row>button{flex:1 1 0}
-.chips{display:flex;gap:8px;flex-wrap:wrap}
-.chips>button{min-height:48px;padding:0 16px;border-radius:24px}
-.field{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--field);border-radius:var(--r);padding:8px 14px;min-height:var(--tap);margin-top:8px;cursor:pointer}
-.field .lab{color:var(--muted);font-size:16px}
-.field .val{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
-input[type=date]{font:inherit;font-size:20px;font-weight:700;border:0;background:transparent;color:inherit;min-height:44px;text-align:right}
-input[type=text]{font:inherit;font-size:18px;border:2px solid var(--line);border-radius:var(--r);min-height:48px;padding:0 12px;width:100%;color:inherit;background:var(--paper)}
-.cal{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.cal>button{min-height:68px;font-size:20px;font-weight:700;border-width:3px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chips>button{min-height:var(--chip);padding:0 12px;border-radius:calc(var(--chip)/2)}
+.field{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--field);border-radius:var(--r);padding:6px 12px;min-height:var(--tap);margin-top:6px;cursor:pointer}
+.field .lab{color:var(--muted);font-size:14px}
+.field .val{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+input[type=date]{font:inherit;font-size:17px;font-weight:700;border:0;background:transparent;color:inherit;min-height:36px;text-align:right}
+input[type=text]{font:inherit;border:2px solid var(--line);border-radius:var(--r);min-height:var(--tap);padding:0 10px;width:100%;color:inherit;background:var(--paper)}
+.cal{display:grid;grid-template-columns:repeat(var(--calcols),1fr);gap:6px}
+.cal>button{min-height:var(--calh);font-size:var(--calfs);font-weight:700;padding:0 4px;border-width:2px}
 .cal>button[data-v="grossa"].on{background:var(--grossa);border-color:var(--grossa)}
 .cal>button[data-v="mezzana"].on{background:var(--mezzana);border-color:var(--mezzana)}
 .cal>button[data-v="semina"].on{background:var(--semina);border-color:var(--semina)}
 .cal>button[data-v="mista"].on{background:var(--mista);border-color:var(--mista)}
-.riga{border:2px solid var(--line);border-left:10px solid var(--line);border-radius:var(--r);padding:12px 14px;margin-top:12px}
+.riga{border:1px solid var(--line);border-left:8px solid var(--line);border-radius:var(--r);padding:var(--pad);margin-top:8px}
 .riga.grossa{border-left-color:var(--grossa)}
 .riga.mezzana{border-left-color:var(--mezzana)}
 .riga.semina{border-left-color:var(--semina)}
 .riga.mista{border-left-color:var(--mista)}
-.t{font-size:20px;font-weight:700}
-.s{color:var(--muted);font-size:16px}
-.port{border-top:2px dashed var(--line);padding-top:10px;margin-top:12px}
-.row.dest>button{min-height:56px;font-weight:600;padding:0 6px}
-.bar{position:fixed;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom));padding:10px 14px;background:var(--paper);border-top:2px solid var(--line);display:none;gap:8px;z-index:6}
+.t{font-size:17px;font-weight:700}
+.s{color:var(--muted);font-size:14px}
+.inline{display:flex;gap:6px;align-items:stretch;margin-top:6px}
+.inline .field{flex:1;margin-top:0}
+.inline .chips{flex:0 0 auto}
+.port{border-top:1px dashed var(--line);padding-top:8px;margin-top:8px}
+.row.dest>button{min-height:var(--tap);font-weight:600;padding:0 4px}
+.right{display:flex;justify-content:flex-end;margin-top:4px}
+.bar{position:fixed;left:0;right:0;bottom:calc(52px + env(safe-area-inset-bottom));padding:8px 12px;background:var(--paper);border-top:1px solid var(--line);display:none;gap:6px;z-index:6}
 .bar>button{flex:1}
 nav.tabs{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--ink);padding-bottom:env(safe-area-inset-bottom);z-index:7}
-nav.tabs>button{flex:1;border:0;border-radius:0;background:transparent;color:#B9C3D1;min-height:64px;font-size:15px;font-weight:600}
-nav.tabs>button.on{color:#fff;box-shadow:inset 0 4px 0 #fff;background:transparent}
-.tot{border-top:3px solid var(--line);padding:12px 0 6px;margin-top:10px}
-.tot.grossa{border-top-color:var(--grossa)}
-.tot.mezzana{border-top-color:var(--mezzana)}
-.tot.semina{border-top-color:var(--semina)}
-.tot.mista{border-top-color:var(--mista)}
-.big{font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;margin:2px 0 6px}
+nav.tabs>button{flex:1;border:0;border-radius:0;background:transparent;color:#B9C3D1;min-height:52px;font-size:14px;font-weight:600}
+nav.tabs>button.on{color:#fff;box-shadow:inset 0 3px 0 #fff;background:transparent}
 table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
-td,th{padding:8px 4px;text-align:right;border-bottom:1px solid var(--line);font-size:15px;vertical-align:top}
-th{color:var(--muted);font-weight:600}
-table.small td,table.small th{font-size:14px;padding:8px 2px}
+td,th{padding:6px 3px;text-align:right;border-bottom:1px solid var(--line);font-size:14px;vertical-align:top;line-height:1.25}
+th{color:var(--muted);font-weight:600;white-space:nowrap}
 td:first-child,th:first-child{text-align:left}
+td.grossa,td.mezzana,td.semina,td.mista{font-weight:700;border-left:6px solid var(--line);padding-left:8px}
+td.grossa{border-left-color:var(--grossa)} td.mezzana{border-left-color:var(--mezzana)} td.semina{border-left-color:var(--semina)} td.mista{border-left-color:var(--mista)}
+.ns{display:block;color:var(--muted);font-size:12px;font-weight:600;white-space:nowrap}
 .stim{color:var(--stima);font-weight:600}
-.empty{color:var(--muted);padding:20px 0}
-.warn{background:#FFF4E5;border-left:6px solid var(--stima);padding:10px 12px;border-radius:6px;margin-top:10px;font-size:16px}
-.grp{border-bottom:2px solid var(--line);padding:12px 0}
-.ev{padding:6px 0 6px 12px;border-left:6px solid var(--line);margin-top:6px;font-size:17px}
-.ev.grossa{border-left-color:var(--grossa)}
-.ev.mezzana{border-left-color:var(--mezzana)}
-.ev.semina{border-left-color:var(--semina)}
-.ev.mista{border-left-color:var(--mista)}
+.empty{color:var(--muted);padding:14px 0}
+.warn{background:#FFF4E5;border-left:5px solid var(--stima);padding:8px 10px;border-radius:6px;margin-top:8px;font-size:14px}
+.grp{border-bottom:1px solid var(--line);padding:8px 0}
+.ev{padding:3px 0 3px 10px;border-left:5px solid var(--line);margin-top:4px;font-size:15px}
+.ev.grossa{border-left-color:var(--grossa)} .ev.mezzana{border-left-color:var(--mezzana)} .ev.semina{border-left-color:var(--semina)} .ev.mista{border-left-color:var(--mista)}
 .ev.ann,.grp.ann .ev{text-decoration:line-through;color:var(--muted)}
 .scrim{position:fixed;inset:0;background:rgba(15,27,45,.45);z-index:19;display:none}.scrim.on{display:block}
-.pad{position:fixed;left:0;right:0;bottom:0;background:var(--paper);border-top:4px solid var(--ink);z-index:20;padding:10px 14px calc(14px + env(safe-area-inset-bottom));display:none}
+.pad{position:fixed;left:0;right:0;bottom:0;background:var(--paper);border-top:3px solid var(--ink);z-index:20;padding:8px 12px calc(10px + env(safe-area-inset-bottom));display:none}
 .pad.on{display:block}
-.pad .disp{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:6px 4px 12px}
-.pad .disp .n{font-size:40px;font-weight:800;font-variant-numeric:tabular-nums;min-height:52px}
-.pad .keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.pad .keys>button{min-height:62px;font-size:26px;font-weight:600}
-.toast{position:fixed;left:14px;right:14px;bottom:calc(150px + env(safe-area-inset-bottom));background:var(--ink);color:#fff;padding:14px 16px;border-radius:var(--r);font-weight:600;z-index:30;display:none}
+.pad .disp{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:4px 4px 8px}
+.pad .disp .n{font-size:32px;font-weight:800;font-variant-numeric:tabular-nums;min-height:40px}
+.pad .keys{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.pad .keys>button{min-height:var(--key);font-size:22px;font-weight:600}
+.toast{position:fixed;left:12px;right:12px;bottom:calc(130px + env(safe-area-inset-bottom));background:var(--ink);color:#fff;padding:12px 14px;border-radius:var(--r);font-weight:600;z-index:30;display:none}
 .toast.on{display:block}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -120,7 +119,7 @@ td:first-child,th:first-child{text-align:left}
     <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
     <button data-k=",">,</button><button data-k="0">0</button><button data-k="del">⌫</button>
   </div>
-  <div class="row" style="margin-top:10px">
+  <div class="row" style="margin-top:6px">
     <button data-k="clear" class="ghost" style="flex:0 0 auto">Vuoto</button>
     <button data-k="close">Annulla</button>
     <button data-k="ok" class="primary">OK</button>
@@ -130,7 +129,7 @@ td:first-child,th:first-child{text-align:left}
 
 <script>
 'use strict';
-const VERSION='0.1.0';
+const VERSION='0.2.0';
 const CALIBRI=['grossa','mezzana','semina','mista'];
 const NOME={grossa:'Grossa',mezzana:'Mezzana',semina:'Semina',mista:'Mista'};
 const DEST_DEFAULT={grossa:'venduta',mezzana:'riseminata',semina:'riseminata',mista:'riseminata'};
@@ -148,6 +147,8 @@ function giornoSett(iso){ const d=new Date(iso+'T12:00:00'); return ['dom','lun'
 function uuid(){ if(typeof crypto!=='undefined'&&crypto.randomUUID) return crypto.randomUUID(); return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&3|8)).toString(16);}); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
+function normVivai(list){ return (list||[]).map(v=>typeof v==='string'?{nome:v,quota_pct:100}:{nome:v.nome,quota_pct:v.quota_pct==null?100:v.quota_pct}); }
+function quotaVivaio(S,nome){ const v=S.vivai.find(x=>x.nome===nome); return v?v.quota_pct:100; }
 function qtaRiga(r){ if(r.unita==='lordo'){ if(r.lordo==null||r.colli==null||r.tara==null) return null; return round2(r.lordo-r.colli*r.tara); } return r.qta; }
 function unitaRiga(r){ return r.unita==='coffe'?'coffe':'kg'; }
 function portionsWithResto(r,q){ const ps=r.dest; let used=0; return ps.map((p,i)=>{ if(i<ps.length-1){ used+=p.qta||0; return Object.assign({},p,{qta:p.qta||0}); } return Object.assign({},p,{qta:round2((q||0)-used)}); }); }
@@ -168,24 +169,28 @@ function buildEventi(F,S){ const ts=new Date().toISOString(); const gruppo=uuid(
 
 function eventiAttivi(E){ const ann=new Set(E.filter(e=>e.tipo==='annulla').map(e=>e.annulla_id)); return E.filter(e=>e.tipo==='raccolta'&&!ann.has(e.id)); }
 function inPeriodo(e,filtro,oggi){ if(filtro==='tutto') return true; if(filtro==='mese') return e.data.slice(0,7)===oggi.slice(0,7); if(filtro==='30'){ const t=new Date(oggi+'T12:00:00'); t.setDate(t.getDate()-30); return e.data>=isoLocal(t); } return true; }
-function kgEvento(e,S){ const f=e.fattore_coffa!=null?e.fattore_coffa:(S.fattore_coffa||25); const base=e.unita==='coffe'?e.qta*f:e.qta; const q=(e.quota_pct==null?100:e.quota_pct)/100; return {kg:base*q, stim:e.unita==='coffe'}; }
-function vuotoT(){ return {raccolto:{c:0,s:0},venduto:{c:0,s:0},euro:{c:0,s:0,senza:0},riseminato:{c:0,s:0},da_assegnare:{c:0,s:0}}; }
-function computeTotali(E,S,filtro,oggi){
-  const T={}; CALIBRI.forEach(c=>T[c]=vuotoT()); const V={}; const C={}; let n=0;
-  for(const e of eventiAttivi(E)){ if(!inPeriodo(e,filtro,oggi)) continue; n++;
-    const {kg,stim}=kgEvento(e,S); let parts;
+function kgEvento(e,S,quota){ const f=e.fattore_coffa!=null?e.fattore_coffa:(S.fattore_coffa||25); const base=e.unita==='coffe'?e.qta*f:e.qta; const q=quota?((e.quota_pct==null?100:e.quota_pct)/100):1; return {kg:base*q, stim:e.unita==='coffe'}; }
+function m0(){ return {c:0,s:0}; }
+function vuotoT(){ return {raccolto:m0(),venduto:m0(),euro:{c:0,s:0,senza:0},riseminato:m0(),da_assegnare:m0()}; }
+// quota=true → quota nostra; quota=false → totale raccolto
+function computeTotali(E,S,filtro,oggi,quota){
+  const T={}; CALIBRI.forEach(c=>T[c]=vuotoT()); const V={}; const C={}; const O={}; let n=0; let haQuota=false;
+  for(const e of eventiAttivi(E)){ if(!inPeriodo(e,filtro,oggi)) continue; n++; if(e.quota_pct!=null&&e.quota_pct!==100) haQuota=true;
+    const {kg,stim}=kgEvento(e,S,quota); let parts;
     if(e.calibro==='mista'&&e.split_mezzana_pct!=null) parts=[['mezzana',kg*e.split_mezzana_pct/100,true],['semina',kg*(100-e.split_mezzana_pct)/100,true]];
     else parts=[[e.calibro,kg,stim]];
+    const og=e.origine_vivaio||'?'; const o=O[og]||(O[og]={grossa:m0(),mezzana:m0(),semina:m0(),mista:m0(),euro:{c:0,s:0},n:0,ultima:null,quota:false});
+    o.n++; if(!o.ultima||e.data>o.ultima) o.ultima=e.data; if(e.quota_pct!=null&&e.quota_pct!==100) o.quota=true;
     parts.forEach(([cal,k,st],idx)=>{ const t=T[cal]||(T[cal]=vuotoT()); const key=st?'s':'c';
-      t.raccolto[key]+=k;
+      t.raccolto[key]+=k; o[cal][key]+=k;
       if(e.dest==='venduta'){ t.venduto[key]+=k; const cp=e.compratore||'?'; const c=C[cp]||(C[cp]={kg:0,euro:0,stim:false,senza:0,incassato:0,n:0});
         c.kg+=k; if(st) c.stim=true; if(idx===0) c.n++;
-        if(e.prezzo_kg!=null){ t.euro[key]+=k*e.prezzo_kg; c.euro+=k*e.prezzo_kg; if(e.incassata_il) c.incassato+=k*e.prezzo_kg; } else { t.euro.senza+=k; c.senza+=k; } }
+        if(e.prezzo_kg!=null){ t.euro[key]+=k*e.prezzo_kg; o.euro[key]+=k*e.prezzo_kg; c.euro+=k*e.prezzo_kg; if(e.incassata_il) c.incassato+=k*e.prezzo_kg; } else { t.euro.senza+=k; c.senza+=k; } }
       else if(e.dest==='riseminata'){ t.riseminato[key]+=k; const vv=e.dest_vivaio||'?'; const v=V[vv]||(V[vv]={grossa:0,mezzana:0,semina:0,mista:0,stim:false,n:0,ultima:null});
         v[cal]+=k; if(st) v.stim=true; if(idx===0) v.n++; if(!v.ultima||e.data>v.ultima) v.ultima=e.data; }
       else t.da_assegnare[key]+=k; });
   }
-  return {T,V,C,n}; }
+  return {T,V,C,O,n,haQuota}; }
 // ===== END PURE =====
 
 // ----- DB -----
@@ -204,21 +209,24 @@ const DB={ db:null,
   setKv(k,v){ return DB.put('kv',{k,v}); } };
 
 // ----- stato -----
-let S={device:'',fattore_coffa:25,tara_collo:null,vivai:[],compratori:[]};
+let S={device:'',fattore_coffa:25,tara_collo:null,vivai:[],compratori:[],densita:'compatta'};
 let E=[]; let vista='nuova'; let filtro='mese'; let persisted=null;
 function nuovaRiga(){ return {calibro:null,qta:null,unita:'kg',split:null,lordo:null,colli:null,tara:null,dest:[]}; }
 function nuovaPort(dest){ return {dest,qta:null,vivaio:'?',compratore:'?',prezzo:null,incassata:false}; }
 function nuovoForm(){ return {passo:1,data:oggiISO(),origine:'?',quota:100,righe:[]}; }
 let F=nuovoForm();
 async function salvaImp(){ await DB.setKv('impostazioni',S); }
+function nomiVivai(){ return S.vivai.map(v=>v.nome); }
 
 // ----- helper html -----
-function btn(label,a,d={},cls=''){ const ds=Object.keys(d).filter(k=>d[k]!=null).map(k=>'data-'+k+'="'+esc(d[k])+'"').join(' '); return '<button data-a="'+a+'" '+ds+' class="'+cls+'">'+label+'</button>'; }
+function dataAttrs(d){ return Object.keys(d).filter(k=>d[k]!=null).map(k=>'data-'+k+'="'+esc(d[k])+'"').join(' '); }
+function btn(label,a,d={},cls=''){ return '<button data-a="'+a+'" '+dataAttrs(d)+' class="'+cls+'">'+label+'</button>'; }
 function chipRow(items,sel,a,d={},addA){ return '<div class="chips">'+items.map(v=>btn(esc(v),a,Object.assign({},d,{v}),v===sel?'on':'')).join('')+(addA?btn('+ nuovo',addA,d,'ghost'):'')+'</div>'; }
-function fieldBtn(lab,val,a,d={}){ const ds=Object.keys(d).filter(k=>d[k]!=null).map(k=>'data-'+k+'="'+esc(d[k])+'"').join(' '); return '<div class="field" data-a="'+a+'" '+ds+'><span class="lab">'+lab+'</span><span class="val">'+val+'</span></div>'; }
+function fieldBtn(lab,val,a,d={}){ return '<div class="field" data-a="'+a+'" '+dataAttrs(d)+'><span class="lab">'+lab+'</span><span class="val">'+val+'</span></div>'; }
 
 // ----- render -----
 function render(){
+  document.body.classList.toggle('barca',S.densita==='barca');
   Object.keys(TAB).forEach(k=>document.getElementById(TAB[k]).classList.toggle('on',k===vista));
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===vista));
   if(vista==='nuova') renderNuova(); else if(vista==='totali') renderTotali(); else if(vista==='registro') renderRegistro(); else renderImpostazioni();
@@ -226,28 +234,27 @@ function render(){
 
 function renderNuova(){ document.getElementById('v-nuova').innerHTML=F.passo===1?passo1():passo2(); }
 
-function passo1(){ const vivai=['?'].concat(S.vivai); const std=[100,50].includes(F.quota);
+function passo1(){ const std=[100,50].includes(F.quota); const qv=quotaVivaio(S,F.origine);
   return '<h2>Passo 1 di 2 — Raccolta</h2>'
   +'<div class="field"><span class="lab">Data</span><input type="date" id="f-data" value="'+F.data+'"></div>'
-  +'<h2>Da dove</h2>'+chipRow(vivai,F.origine,'set-origine',{},'nuovo-vivaio-orig')
-  +'<h2>Quota nostra</h2><div class="chips">'+['100','50'].map(q=>btn(q+' %','set-quota',{v:q},F.quota===+q?'on':'')).join('')+btn(std?'altro…':fmt(F.quota,1)+' %','set-quota',{v:'altro'},std?'':'on')+'</div>'
+  +'<h2>Da dove</h2>'+chipRow(['?'].concat(nomiVivai()),F.origine,'set-origine',{},'nuovo-vivaio-orig')
+  +'<h2>Quota nostra'+(qv!==100?' <span class="s">(a '+esc(F.origine)+' di solito '+fmt(qv,1)+' %)</span>':'')+'</h2><div class="chips">'+['100','50'].map(q=>btn(q+' %','set-quota',{v:q},F.quota===+q?'on':'')).join('')+btn(std?'altro…':fmt(F.quota,1)+' %','set-quota',{v:'altro'},std?'':'on')+'</div>'
   +'<h2>Calibri raccolti</h2>'
-  +(F.righe.length?F.righe.map((r,i)=>rigaCard(r,i)).join(''):'<div class="empty">Nessun calibro ancora. Aggiungine uno.</div>')
-  +'<button class="primary" style="width:100%;margin-top:12px" data-a="add-riga">+ Aggiungi calibro</button>'; }
+  +(F.righe.length?F.righe.map((r,i)=>rigaCard(r,i)).join(''):'<div class="empty">Nessun calibro ancora.</div>')
+  +'<button class="primary" style="width:100%;margin-top:8px" data-a="add-riga">+ Aggiungi calibro</button>'; }
 
 function rigaCard(r,i){ const q=qtaRiga(r); const u=unitaRiga(r); let extra='';
   if(r.calibro==='mista'){ const opts=['?','50','60','70','80']; const cur=r.split==null?'?':String(r.split); const other=r.split!=null&&!opts.includes(cur);
-    extra+='<div class="s" style="margin-top:10px">Quanta mezzana, circa?</div><div class="chips">'+opts.map(o=>btn(o==='?'?'non lo so':o+' %','riga-split',{i,v:o},cur===o?'on':'')).join('')+btn(other?fmt(r.split,0)+' %':'altro…','riga-split',{i,v:'altro'},other?'on':'')+'</div>'; }
-  if(r.unita==='lordo'){ extra+=fieldBtn('Peso lordo',r.lordo==null?'—':fmt(r.lordo,2)+' kg','riga-lordo',{i})
-    +fieldBtn('Colli',r.colli==null?'—':fmt(r.colli,0),'riga-colli',{i})
-    +fieldBtn('Tara per collo',r.tara==null?'—':fmt(r.tara,2)+' kg','riga-tara',{i})
-    +'<div class="s" style="margin-top:8px">Netto: <b>'+(q==null?'—':fmt(q,2)+' kg')+'</b></div>'; }
-  else extra+=fieldBtn('Quantità',r.qta==null?'—':fmt(r.qta,2)+' '+u,'riga-qta',{i});
+    extra+='<div class="s" style="margin-top:6px">Quanta mezzana, circa?</div><div class="chips">'+opts.map(o=>btn(o==='?'?'non so':o+' %','riga-split',{i,v:o},cur===o?'on':'')).join('')+btn(other?fmt(r.split,0)+' %':'altro…','riga-split',{i,v:'altro'},other?'on':'')+'</div>'; }
+  const unitaChips='<div class="chips">'+[['kg','kg'],['coffe','coffe'],['lordo','lordo']].map(([v,l])=>btn(l,'riga-unita',{i,v},r.unita===v?'on':'')).join('')+'</div>';
+  if(r.unita==='lordo'){ extra+='<div class="inline">'+fieldBtn('Lordo',r.lordo==null?'—':fmt(r.lordo,2)+' kg','riga-lordo',{i})+unitaChips+'</div>'
+    +'<div class="inline">'+fieldBtn('Colli',r.colli==null?'—':fmt(r.colli,0),'riga-colli',{i})+fieldBtn('Tara/collo',r.tara==null?'—':fmt(r.tara,2)+' kg','riga-tara',{i})+'</div>'
+    +'<div class="s" style="margin-top:6px">Netto: <b>'+(q==null?'—':fmt(q,2)+' kg')+'</b></div>'; }
+  else extra='<div class="inline">'+fieldBtn('Quantità',r.qta==null?'—':fmt(r.qta,2)+' '+u,'riga-qta',{i})+unitaChips+'</div>'+extra;
   return '<div class="riga '+(r.calibro||'')+'">'
   +'<div class="cal">'+CALIBRI.map(c=>btn(NOME[c],'riga-cal',{i,v:c},r.calibro===c?'on':'')).join('')+'</div>'
-  +'<div class="chips" style="margin-top:10px">'+[['kg','kg'],['coffe','coffe'],['lordo','lordo + colli']].map(([v,l])=>btn(l,'riga-unita',{i,v},r.unita===v?'on':'')).join('')+'</div>'
   +extra
-  +'<div class="row" style="margin-top:10px;justify-content:flex-end"><button class="ghost danger" data-a="riga-del" data-i="'+i+'" style="flex:0 0 auto">Togli</button></div>'
+  +'<div class="right"><button class="ghost danger mini" data-a="riga-del" data-i="'+i+'">Togli</button></div>'
   +'</div>'; }
 
 function passo2(){ return '<h2>Passo 2 di 2 — Destinazione</h2>'
@@ -258,29 +265,38 @@ function destRow(sel,i,j){ return '<div class="row dest">'+[['riseminata','Risem
 
 function portCard(r,i){ const q=qtaRiga(r); const u=unitaRiga(r); const ps=portionsWithResto(r,q); const resto=ps[ps.length-1].qta; const molte=r.dest.length>1;
   const parts=r.dest.map((p,j)=>{ const last=j===r.dest.length-1; let inner='';
-    if(p.dest==='riseminata') inner='<div class="s" style="margin-top:8px">In quale vivaio</div>'+chipRow(['?'].concat(S.vivai),p.vivaio,'p-vivaio',{i,j},'nuovo-vivaio');
-    if(p.dest==='venduta') inner='<div class="s" style="margin-top:8px">A chi</div>'+chipRow(['?'].concat(S.compratori),p.compratore,'p-comp',{i,j},'nuovo-comp')
-      +fieldBtn('Prezzo al kg',p.prezzo==null?'?':fmt(p.prezzo,2)+' €','p-prezzo',{i,j})
-      +'<div class="chips" style="margin-top:8px">'+btn(p.incassata?'Incassata: sì':'Incassata: no','p-inc',{i,j},p.incassata?'on':'')+'</div>';
-    let qh=''; if(molte){ qh=last?'<div class="s" style="margin-top:8px">Resto: <b class="'+(resto<0?'stim':'')+'">'+fmt(resto,2)+' '+u+'</b></div>':fieldBtn('Quanto',p.qta==null?'—':fmt(p.qta,2)+' '+u,'p-qta',{i,j}); }
-    return '<div class="port">'+destRow(p.dest,i,j)+qh+inner+(molte?'<div class="row" style="justify-content:flex-end;margin-top:6px"><button class="ghost danger" style="flex:0 0 auto" data-a="p-del" data-i="'+i+'" data-j="'+j+'">Togli</button></div>':'')+'</div>'; }).join('');
+    if(p.dest==='riseminata') inner='<div class="s" style="margin-top:6px">In quale vivaio</div>'+chipRow(['?'].concat(nomiVivai()),p.vivaio,'p-vivaio',{i,j},'nuovo-vivaio');
+    if(p.dest==='venduta') inner='<div class="s" style="margin-top:6px">A chi</div>'+chipRow(['?'].concat(S.compratori),p.compratore,'p-comp',{i,j},'nuovo-comp')
+      +'<div class="inline">'+fieldBtn('€/kg',p.prezzo==null?'?':fmt(p.prezzo,2),'p-prezzo',{i,j})+'<div class="chips">'+btn(p.incassata?'Incassata':'Da incassare','p-inc',{i,j},p.incassata?'on':'')+'</div></div>';
+    let qh=''; if(molte){ qh=last?'<div class="s" style="margin-top:6px">Resto: <b class="'+(resto<0?'stim':'')+'">'+fmt(resto,2)+' '+u+'</b></div>':fieldBtn('Quanto',p.qta==null?'—':fmt(p.qta,2)+' '+u,'p-qta',{i,j}); }
+    return '<div class="port">'+destRow(p.dest,i,j)+qh+inner+(molte?'<div class="right"><button class="ghost danger mini" data-a="p-del" data-i="'+i+'" data-j="'+j+'">Togli</button></div>':'')+'</div>'; }).join('');
   return '<div class="riga '+r.calibro+'"><div class="t">'+NOME[r.calibro]+' · '+fmt(q,2)+' '+u+'</div>'+parts
-  +(r.dest.length<4?'<button class="ghost" style="margin-top:8px" data-a="p-add" data-i="'+i+'">Dividi: aggiungi una destinazione</button>':'')+'</div>'; }
+  +(r.dest.length<4?'<button class="ghost mini" style="margin-top:6px" data-a="p-add" data-i="'+i+'">+ Dividi la destinazione</button>':'')+'</div>'; }
 
-function renderTotali(){ const el=document.getElementById('v-totali'); const {T,V,C,n}=computeTotali(E,S,filtro,oggiISO());
-  const fchips='<div class="chips">'+[['mese','Questo mese'],['30','Ultimi 30 giorni'],['tutto','Tutto']].map(([v,l])=>btn(l,'filtro',{v},filtro===v?'on':'')).join('')+'</div>';
-  if(!n){ el.innerHTML=fchips+'<div class="empty">Nessuna raccolta nel periodo.</div>'; return; }
-  const kgs=o=>(o.c===0&&o.s)?'<span class="stim">≈'+fmt(o.s,1)+'</span>':fmt(o.c,1)+(o.s?' <span class="stim">+ ≈'+fmt(o.s,1)+'</span>':'');
-  const cal=CALIBRI.filter(c=>T[c].raccolto.c||T[c].raccolto.s).map(c=>{ const t=T[c];
-    const euro=(t.euro.c||t.euro.s)?fmtEuro(t.euro.c)+(t.euro.s?' <span class="stim">+ ≈'+fmtEuro(t.euro.s)+'</span>':''):'';
-    return '<div class="tot '+c+'"><div class="t">'+NOME[c]+'</div><div class="big">'+kgs(t.raccolto)+' <span class="s" style="font-size:16px;font-weight:500">kg raccolti</span></div>'
-    +'<table><tr><th>Venduto</th><th>Riseminato</th><th>Da assegnare</th></tr><tr><td>'+kgs(t.venduto)+' kg'+(euro?'<br>'+euro:'')+(t.euro.senza?'<br><span class="stim">'+fmt(t.euro.senza,1)+' kg senza prezzo</span>':'')+'</td><td>'+kgs(t.riseminato)+' kg</td><td>'+kgs(t.da_assegnare)+' kg</td></tr></table></div>'; }).join('');
-  const viv=Object.keys(V).sort().map(k=>{ const v=V[k]; const cell=x=>x?fmt(x,0):'—';
-    return '<tr><td>'+esc(k)+(v.stim?' <span class="stim">≈</span>':'')+'</td><td>'+cell(v.mezzana)+'</td><td>'+cell(v.semina)+'</td><td>'+cell(v.mista)+'</td><td>'+cell(v.grossa)+'</td><td>'+fmtData(v.ultima).slice(0,5)+'</td></tr>'; }).join('');
-  const comp=Object.keys(C).sort().map(k=>{ const c=C[k];
-    return '<tr><td>'+esc(k)+'</td><td>'+fmt(c.kg,0)+(c.stim?' <span class="stim">≈</span>':'')+'</td><td>'+fmtEuro(c.euro)+(c.senza?'<br><span class="stim">'+fmt(c.senza,0)+' kg senza prezzo</span>':'')+'</td><td>'+fmtEuro(c.incassato)+'</td></tr>'; }).join('');
-  el.innerHTML=fchips+'<div class="s" style="margin-top:8px">≈ = stimato: coffe convertite a '+fmt(S.fattore_coffa,1)+' kg, split della mista, prezzi mancanti.</div>'+cal
-  +'<h2>Riseminato per vivaio (kg)</h2>'+(viv?'<table class="small"><tr><th>Vivaio</th><th>Mezz.</th><th>Sem.</th><th>Mista</th><th>Grossa</th><th>Ultima</th></tr>'+viv+'</table>':'<div class="empty">Niente riseminato nel periodo.</div>')
+// numero compatto: certo, ≈stimato, o certo+≈stimato
+function num(o,d){ d=d==null?0:d; if(!o.s) return fmt(o.c,d); if(!o.c) return '<span class="stim">≈'+fmt(o.s,d)+'</span>'; return fmt(o.c,d)+'<span class="stim">+≈'+fmt(o.s,d)+'</span>'; }
+function numE(o){ if(!o.s) return fmtEuro(o.c); if(!o.c) return '<span class="stim">≈'+fmtEuro(o.s)+'</span>'; return fmtEuro(o.c)+'<span class="stim">+≈'+fmtEuro(o.s)+'</span>'; }
+function diff(a,b){ return Math.abs((a.c+a.s)-(b.c+b.s))>0.005; }
+// cella: totale, e sotto la quota nostra solo se diversa
+function cella(tot,nos,euro){ const f=euro?numE:num; return f(tot)+(nos&&diff(tot,nos)?'<span class="ns">'+f(nos)+' nostra</span>':''); }
+
+function renderTotali(){ const el=document.getElementById('v-totali'); const oggi=oggiISO();
+  const tot=computeTotali(E,S,filtro,oggi,false); const nos=computeTotali(E,S,filtro,oggi,true);
+  const fchips='<div class="chips">'+[['mese','Mese'],['30','30 giorni'],['tutto','Tutto']].map(([v,l])=>btn(l,'filtro',{v},filtro===v?'on':'')).join('')+'</div>';
+  if(!tot.n){ el.innerHTML=fchips+'<div class="empty">Nessuna raccolta nel periodo.</div>'; return; }
+  const legenda='<div class="s" style="margin-top:6px">≈ stimato (coffe a '+fmt(S.fattore_coffa,1)+' kg, split mista, prezzo mancante)'+(tot.haQuota?' · sotto ogni numero la <b>quota nostra</b> dove è diversa dal totale':'')+'</div>';
+  const cal=CALIBRI.filter(c=>tot.T[c].raccolto.c||tot.T[c].raccolto.s).map(c=>{ const t=tot.T[c]; const q=nos.T[c];
+    return '<tr><td class="'+c+'">'+NOME[c]+'</td><td>'+cella(t.raccolto,q.raccolto)+'</td><td>'+cella(t.venduto,q.venduto)+(t.euro.c||t.euro.s?'<span class="ns" style="color:var(--ink)">'+cella(t.euro,q.euro,true)+'</span>':'')+(t.euro.senza?'<span class="ns stim">'+fmt(t.euro.senza,0)+' kg s/prezzo</span>':'')+'</td><td>'+cella(t.riseminato,q.riseminato)+'</td><td>'+cella(t.da_assegnare,q.da_assegnare)+'</td></tr>'; }).join('');
+  const orig=Object.keys(tot.O).sort().map(k=>{ const o=tot.O[k]; const p=nos.O[k]; const c=cal=>(o[cal].c||o[cal].s)?cella(o[cal],p[cal]):'—';
+    return '<tr><td>'+esc(k)+'</td><td>'+c('grossa')+'</td><td>'+c('mezzana')+'</td><td>'+c('semina')+'</td><td>'+c('mista')+'</td><td>'+((o.euro.c||o.euro.s)?cella(o.euro,p.euro,true):'—')+'</td><td>'+o.n+'</td></tr>'; }).join('');
+  const viv=Object.keys(tot.V).sort().map(k=>{ const v=tot.V[k]; const p=nos.V[k]; const c=cal=>{ if(!v[cal]) return '—'; const a=fmt(v[cal],0); return Math.abs(v[cal]-p[cal])>0.005?a+'<span class="ns">'+fmt(p[cal],0)+' nostra</span>':a; };
+    return '<tr><td>'+esc(k)+(v.stim?' <span class="stim">≈</span>':'')+'</td><td>'+c('grossa')+'</td><td>'+c('mezzana')+'</td><td>'+c('semina')+'</td><td>'+c('mista')+'</td><td>'+fmtData(v.ultima).slice(0,5)+'</td></tr>'; }).join('');
+  const comp=Object.keys(tot.C).sort().map(k=>{ const c=tot.C[k]; const p=nos.C[k]; const two=(a,b,f)=>f(a)+(Math.abs(a-b)>0.005?'<span class="ns">'+f(b)+' nostra</span>':'');
+    return '<tr><td>'+esc(k)+(c.stim?' <span class="stim">≈</span>':'')+'</td><td>'+two(c.kg,p.kg,x=>fmt(x,0))+'</td><td>'+two(c.euro,p.euro,fmtEuro)+(c.senza?'<span class="ns stim">'+fmt(c.senza,0)+' kg s/prezzo</span>':'')+'</td><td>'+two(c.incassato,p.incassato,fmtEuro)+'</td></tr>'; }).join('');
+  el.innerHTML=fchips+legenda
+  +'<h2>Per calibro (kg)</h2><table><tr><th></th><th>Raccolto</th><th>Venduto</th><th>Risem.</th><th>Da ass.</th></tr>'+cal+'</table>'
+  +'<h2>Raccolto per vivaio d\'origine (kg)</h2><table><tr><th>Vivaio</th><th>Grossa</th><th>Mezz.</th><th>Sem.</th><th>Mista</th><th>€ vend.</th><th>N</th></tr>'+orig+'</table>'
+  +'<h2>Riseminato per vivaio (kg)</h2>'+(viv?'<table><tr><th>Vivaio</th><th>Grossa</th><th>Mezz.</th><th>Sem.</th><th>Mista</th><th>Ultima</th></tr>'+viv+'</table>':'<div class="empty">Niente riseminato nel periodo.</div>')
   +'<h2>Venduto per compratore</h2>'+(comp?'<table><tr><th>Compratore</th><th>kg</th><th>Venduto</th><th>Incassato</th></tr>'+comp+'</table>':'<div class="empty">Niente venduto nel periodo.</div>'); }
 
 function renderRegistro(){ const el=document.getElementById('v-registro'); const ann=new Set(E.filter(e=>e.tipo==='annulla').map(e=>e.annulla_id)); const racc=E.filter(e=>e.tipo==='raccolta');
@@ -294,24 +310,26 @@ function renderRegistro(){ const el=document.getElementById('v-registro'); const
       const m=e.calibro==='mista'?(e.split_mezzana_pct!=null?' (≈'+fmt(e.split_mezzana_pct,0)+' % mezz.)':' (split ?)'):'';
       const lordo=e.lordo_kg!=null?' <span class="s">(lordo '+fmt(e.lordo_kg,2)+', '+fmt(e.colli,0)+' colli)</span>':'';
       return '<div class="ev '+e.calibro+(a?' ann':'')+'"><b>'+NOME[e.calibro]+'</b>'+m+' '+fmt(e.qta,2)+' '+e.unita+lordo+' → '+d+'</div>'; }).join('');
-    return '<div class="grp'+(tuttiAnn?' ann':'')+'"><div class="t">'+giornoSett(e0.data)+' '+fmtData(e0.data)+' <span class="s">· da '+esc(e0.origine_vivaio||'?')+(e0.quota_pct!==100?' · quota '+fmt(e0.quota_pct,1)+' %':'')+'</span></div>'+righe
-    +(tuttiAnn?'<div class="s" style="margin-top:6px">annullata</div>':'<div class="row" style="justify-content:flex-end;margin-top:6px"><button class="ghost danger" style="flex:0 0 auto" data-a="annulla-gruppo" data-v="'+e0.gruppo+'">Annulla</button></div>')+'</div>'; }).join(''); }
+    return '<div class="grp'+(tuttiAnn?' ann':'')+'"><div class="t" style="font-size:15px">'+giornoSett(e0.data)+' '+fmtData(e0.data)+' <span class="s">· da '+esc(e0.origine_vivaio||'?')+(e0.quota_pct!==100?' · quota '+fmt(e0.quota_pct,1)+' %':'')+'</span></div>'+righe
+    +(tuttiAnn?'<div class="s" style="margin-top:4px">annullata</div>':'<div class="right"><button class="ghost danger mini" data-a="annulla-gruppo" data-v="'+e0.gruppo+'">Annulla</button></div>')+'</div>'; }).join(''); }
 
-function chipDel(items,delA,addA){ return '<div class="chips">'+items.map(v=>btn(esc(v)+' ✕',delA,{v})).join('')+btn('+ nuovo',addA,{},'ghost')+'</div>'; }
 function renderImpostazioni(){ const el=document.getElementById('v-impostazioni');
+  const vivChips='<div class="chips">'+S.vivai.map(v=>btn(esc(v.nome)+(v.quota_pct!==100?' · '+fmt(v.quota_pct,1)+' %':''),'imp-vivaio-quota',{v:v.nome})+btn('✕','imp-vivaio-del',{v:v.nome},'mini danger')).join('')+btn('+ nuovo','imp-vivaio-add',{},'ghost')+'</div>';
+  const compChips='<div class="chips">'+S.compratori.map(v=>btn(esc(v),'noop',{})+btn('✕','imp-comp-del',{v},'mini danger')).join('')+btn('+ nuovo','imp-comp-add',{},'ghost')+'</div>';
   el.innerHTML='<div class="warn">Versione di prova: i dati stanno solo su questo telefono, nessuna sincronizzazione. Esporta il JSON ogni giorno di uso.</div>'
   +'<h2>Dati</h2>'
   +'<div class="field"><span class="lab">Eventi registrati</span><span class="val">'+eventiAttivi(E).length+'</span></div>'
   +'<div class="field"><span class="lab">Storage protetto dal browser</span><span class="val">'+(persisted===true?'sì':persisted===false?'no':'?')+'</span></div>'
-  +'<div class="row" style="margin-top:10px"><button class="primary" data-a="esporta">Esporta JSON</button><button data-a="importa">Importa JSON</button></div>'
+  +'<div class="row" style="margin-top:8px"><button class="primary" data-a="esporta">Esporta JSON</button><button data-a="importa">Importa JSON</button></div>'
   +'<input type="file" id="f-import" accept="application/json,.json" style="display:none">'
-  +'<h2>Nome di questo dispositivo</h2><input type="text" id="f-device" value="'+esc(S.device)+'" placeholder="es. telefono">'
+  +'<h2>Aspetto</h2><div class="chips">'+btn('Compatta','densita',{v:'compatta'},S.densita!=='barca'?'on':'')+btn('Barca: tutto più grande','densita',{v:'barca'},S.densita==='barca'?'on':'')+'</div>'
+  +'<h2>Vivai <span class="s">(tocca per la quota nostra abituale)</span></h2>'+vivChips
+  +'<h2>Compratori</h2>'+compChips
   +'<h2>Conversioni</h2>'
   +fieldBtn('1 coffa =',fmt(S.fattore_coffa,1)+' kg','imp-fattore')
   +fieldBtn('Tara per collo',S.tara_collo==null?'?':fmt(S.tara_collo,2)+' kg','imp-tara')
-  +'<h2>Vivai</h2>'+chipDel(S.vivai,'imp-vivaio-del','imp-vivaio-add')
-  +'<h2>Compratori</h2>'+chipDel(S.compratori,'imp-comp-del','imp-comp-add')
-  +'<div class="s" style="margin-top:24px">Registro calibri v'+VERSION+'</div>'; }
+  +'<h2>Nome di questo dispositivo</h2><input type="text" id="f-device" value="'+esc(S.device)+'" placeholder="es. telefono">'
+  +'<div class="s" style="margin-top:20px">Registro calibri v'+VERSION+'</div>'; }
 
 function renderBar(){ const bar=document.getElementById('bar'); if(vista!=='nuova'){ bar.style.display='none'; document.body.classList.remove('has-bar'); return; }
   bar.style.display='flex'; document.body.classList.add('has-bar');
@@ -334,7 +352,9 @@ async function salva(){ const err=validaPasso2(); if(err){ toast(err); return; }
 async function annullaGruppo(g){ const ann=new Set(E.filter(e=>e.tipo==='annulla').map(e=>e.annulla_id)); const targets=E.filter(e=>e.tipo==='raccolta'&&e.gruppo===g&&!ann.has(e.id)); if(!targets.length) return;
   const ts=new Date().toISOString(); const evs=targets.map(t=>({id:uuid(),ts,device:S.device,tipo:'annulla',annulla_id:t.id,gruppo:g}));
   try{ await DB.putMany('eventi',evs); E.push(...evs); toast('Raccolta annullata'); render(); }catch(e){ toast('Non annullata: '+(e&&e.message?e.message:e)); } }
-async function nuovoNome(titolo,lista){ const n=(window.prompt(titolo)||'').trim(); if(!n) return null; if(!S[lista].includes(n)){ S[lista].push(n); await salvaImp(); } return n; }
+async function nuovoNome(titolo,lista){ const n=(window.prompt(titolo)||'').trim(); if(!n) return null;
+  if(lista==='vivai'){ if(!S.vivai.some(v=>v.nome===n)){ S.vivai.push({nome:n,quota_pct:100}); await salvaImp(); } }
+  else if(!S.compratori.includes(n)){ S.compratori.push(n); await salvaImp(); } return n; }
 
 // ----- export / import -----
 async function esporta(){ const payload={schema:1,app:'registro-calibri',versione:VERSION,esportato_il:new Date().toISOString(),device:S.device,impostazioni:S,eventi:E};
@@ -345,15 +365,16 @@ async function importa(file){ let p; try{ p=JSON.parse(await file.text()); }catc
   const list=Array.isArray(p)?p:(p&&p.eventi); if(!Array.isArray(list)){ toast('Nel file non c\'è la lista "eventi"'); return; }
   const validi=list.filter(e=>e&&typeof e.id==='string'&&(e.tipo==='raccolta'||e.tipo==='annulla'));
   let n=0; try{ n=await DB.addMany('eventi',validi); }catch(e){ toast('Import fallito: '+(e&&e.message?e.message:e)); return; }
-  if(p&&p.impostazioni){ S.vivai=[...new Set(S.vivai.concat(p.impostazioni.vivai||[]))]; S.compratori=[...new Set(S.compratori.concat(p.impostazioni.compratori||[]))]; await salvaImp(); }
+  if(p&&p.impostazioni){ normVivai(p.impostazioni.vivai).forEach(v=>{ if(!S.vivai.some(x=>x.nome===v.nome)) S.vivai.push(v); }); S.compratori=[...new Set(S.compratori.concat(p.impostazioni.compratori||[]))]; await salvaImp(); }
   E=await DB.all('eventi'); E.sort((a,b)=>String(a.ts).localeCompare(String(b.ts)));
   toast('Importati '+n+' eventi nuovi, '+(validi.length-n)+' già presenti'); render(); }
 
 // ----- numpad -----
-const Pad={cb:null,val:'',dec:2,
-  open(title,cur,cb,opts={}){ Pad.cb=cb; Pad.dec=opts.dec==null?2:opts.dec; Pad.val=cur==null?'':String(cur).replace('.',','); document.getElementById('pad-title').textContent=title; Pad.draw(); document.getElementById('pad').classList.add('on'); document.getElementById('scrim').classList.add('on'); },
+const Pad={cb:null,val:'',dec:2,fresh:false,
+  open(title,cur,cb,opts={}){ Pad.cb=cb; Pad.dec=opts.dec==null?2:opts.dec; Pad.val=cur==null?'':String(cur).replace('.',','); Pad.fresh=Pad.val!==''; document.getElementById('pad-title').textContent=title; Pad.draw(); document.getElementById('pad').classList.add('on'); document.getElementById('scrim').classList.add('on'); },
   draw(){ document.getElementById('pad-val').textContent=Pad.val||'—'; },
-  key(k){ if(k==='del') Pad.val=Pad.val.slice(0,-1);
+  key(k){ if(Pad.fresh){ Pad.fresh=false; Pad.val=''; if(k==='del'){ Pad.draw(); return; } }
+    if(k==='del') Pad.val=Pad.val.slice(0,-1);
     else if(k===','){ if(Pad.dec>0&&!Pad.val.includes(',')) Pad.val=(Pad.val||'0')+','; }
     else { if(Pad.val.includes(',')&&Pad.val.split(',')[1].length>=Pad.dec) return; if(Pad.val.length>=9) return; Pad.val=Pad.val==='0'?k:Pad.val+k; }
     Pad.draw(); },
@@ -370,8 +391,8 @@ document.body.addEventListener('click',async e=>{ const b=e.target.closest('[dat
   const R=i!=null?F.righe[i]:null; const P=(R&&j!=null)?R.dest[j]:null;
   switch(d.a){
     case 'tab': vista=v; render(); window.scrollTo(0,0); break;
-    case 'set-origine': F.origine=v; render(); break;
-    case 'nuovo-vivaio-orig': { const n=await nuovoNome('Nome del vivaio','vivai'); if(n){ F.origine=n; } render(); break; }
+    case 'set-origine': F.origine=v; F.quota=quotaVivaio(S,v); render(); break;
+    case 'nuovo-vivaio-orig': { const n=await nuovoNome('Nome del vivaio','vivai'); if(n){ F.origine=n; F.quota=quotaVivaio(S,n); } render(); break; }
     case 'set-quota': if(v==='altro') Pad.open('Quota nostra (%)',[100,50].includes(F.quota)?null:F.quota,n=>{ if(n!=null&&n>0&&n<=100){ F.quota=n; render(); } else toast('Quota fra 1 e 100'); },{dec:1}); else { F.quota=+v; render(); } break;
     case 'add-riga': F.righe.push(nuovaRiga()); render(); break;
     case 'riga-cal': R.calibro=v; render(); break;
@@ -398,14 +419,17 @@ document.body.addEventListener('click',async e=>{ const b=e.target.closest('[dat
     case 'salva': await salva(); break;
     case 'filtro': filtro=v; render(); break;
     case 'annulla-gruppo': if(window.confirm('Annullare questa raccolta? Resta nello storico come annullata.')) await annullaGruppo(v); break;
+    case 'densita': S.densita=v; await salvaImp(); render(); break;
     case 'imp-fattore': Pad.open('1 coffa = ? kg',S.fattore_coffa,async n=>{ if(n&&n>0){ S.fattore_coffa=n; await salvaImp(); render(); } else toast('Serve un numero maggiore di 0'); },{dec:1}); break;
     case 'imp-tara': Pad.open('Tara per collo (kg)',S.tara_collo,async n=>{ S.tara_collo=n; await salvaImp(); render(); }); break;
     case 'imp-vivaio-add': await nuovoNome('Nome del vivaio','vivai'); render(); break;
-    case 'imp-vivaio-del': if(window.confirm('Togliere "'+v+'" dalla lista? Gli eventi già salvati non cambiano.')){ S.vivai=S.vivai.filter(x=>x!==v); await salvaImp(); render(); } break;
+    case 'imp-vivaio-quota': { const vv=S.vivai.find(x=>x.nome===v); if(!vv) break; Pad.open('Quota nostra a '+v+' (%)',vv.quota_pct,async n=>{ if(n!=null&&n>0&&n<=100){ vv.quota_pct=n; await salvaImp(); render(); } else toast('Quota fra 1 e 100'); },{dec:1}); break; }
+    case 'imp-vivaio-del': if(window.confirm('Togliere "'+v+'" dalla lista? Gli eventi già salvati non cambiano.')){ S.vivai=S.vivai.filter(x=>x.nome!==v); await salvaImp(); render(); } break;
     case 'imp-comp-add': await nuovoNome('Nome del compratore','compratori'); render(); break;
     case 'imp-comp-del': if(window.confirm('Togliere "'+v+'" dalla lista? Gli eventi già salvati non cambiano.')){ S.compratori=S.compratori.filter(x=>x!==v); await salvaImp(); render(); } break;
     case 'esporta': await esporta(); break;
     case 'importa': document.getElementById('f-import').click(); break;
+    case 'noop': break;
   } });
 document.body.addEventListener('change',async e=>{ const t=e.target;
   if(t.id==='f-data'){ if(t.value) F.data=t.value; }
@@ -416,7 +440,9 @@ document.body.addEventListener('change',async e=>{ const t=e.target;
 (async function init(){
   try{ await DB.open(); }catch(e){ document.querySelector('main').innerHTML='<div class="warn">Il browser non permette di salvare (IndexedDB bloccato: navigazione privata?). Apri l\'app in una scheda normale.</div>'; return; }
   const s=await DB.getKv('impostazioni'); if(s) S=Object.assign({},S,s);
-  if(!S.device){ S.device='tel-'+Math.random().toString(36).slice(2,6); await salvaImp(); }
+  S.vivai=normVivai(S.vivai); // v0.1 salvava i vivai come stringhe
+  if(!S.device){ S.device='tel-'+Math.random().toString(36).slice(2,6); }
+  await salvaImp();
   E=await DB.all('eventi'); E.sort((a,b)=>String(a.ts).localeCompare(String(b.ts)));
   try{ if(navigator.storage&&navigator.storage.persist) persisted=await navigator.storage.persist(); }catch(e){}
   if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
