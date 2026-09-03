@@ -129,7 +129,7 @@ td.grossa{border-left-color:var(--grossa)} td.mezzana{border-left-color:var(--me
 
 <script>
 'use strict';
-const VERSION='0.2.0';
+const VERSION='0.2.1';
 const CALIBRI=['grossa','mezzana','semina','mista'];
 const NOME={grossa:'Grossa',mezzana:'Mezzana',semina:'Semina',mista:'Mista'};
 const DEST_DEFAULT={grossa:'venduta',mezzana:'riseminata',semina:'riseminata',mista:'riseminata'};
@@ -210,7 +210,7 @@ const DB={ db:null,
 
 // ----- stato -----
 let S={device:'',fattore_coffa:25,tara_collo:null,vivai:[],compratori:[],densita:'compatta'};
-let E=[]; let vista='nuova'; let filtro='mese'; let persisted=null;
+let E=[]; let vista='nuova'; let filtro='mese'; let persisted=null; let mostraAnn=false;
 function nuovaRiga(){ return {calibro:null,qta:null,unita:'kg',split:null,lordo:null,colli:null,tara:null,dest:[]}; }
 function nuovaPort(dest){ return {dest,qta:null,vivaio:'?',compratore:'?',prezzo:null,incassata:false}; }
 function nuovoForm(){ return {passo:1,data:oggiISO(),origine:'?',quota:100,righe:[]}; }
@@ -302,8 +302,11 @@ function renderTotali(){ const el=document.getElementById('v-totali'); const ogg
 function renderRegistro(){ const el=document.getElementById('v-registro'); const ann=new Set(E.filter(e=>e.tipo==='annulla').map(e=>e.annulla_id)); const racc=E.filter(e=>e.tipo==='raccolta');
   if(!racc.length){ el.innerHTML='<div class="empty">Registro vuoto. La prima raccolta comparirà qui.</div>'; return; }
   const G={}; racc.forEach(e=>{ (G[e.gruppo]||(G[e.gruppo]=[])).push(e); });
-  const gruppi=Object.values(G).sort((a,b)=>(b[0].data+b[0].ts).localeCompare(a[0].data+a[0].ts));
-  el.innerHTML=gruppi.map(g=>{ const e0=g[0]; const tuttiAnn=g.every(e=>ann.has(e.id));
+  const tutti=Object.values(G).sort((a,b)=>(b[0].data+b[0].ts).localeCompare(a[0].data+a[0].ts));
+  const nAnn=tutti.filter(g=>g.every(e=>ann.has(e.id))).length;
+  const gruppi=mostraAnn?tutti:tutti.filter(g=>!g.every(e=>ann.has(e.id)));
+  const testa=nAnn?'<div class="chips" style="margin-bottom:4px">'+btn(mostraAnn?'Nascondi annullate':'Mostra annullate ('+nAnn+')','toggle-ann',{},mostraAnn?'on':'')+'</div>':'';
+  el.innerHTML=testa+gruppi.map(g=>{ const e0=g[0]; const tuttiAnn=g.every(e=>ann.has(e.id));
     const righe=g.map(e=>{ const a=ann.has(e.id); let d='';
       if(e.dest==='venduta') d='venduta a '+esc(e.compratore||'?')+(e.prezzo_kg!=null?' · '+fmt(e.prezzo_kg,2)+' €/kg':' · prezzo ?')+(e.incassata_il?' · incassata':'');
       else if(e.dest==='riseminata') d='riseminata in '+esc(e.dest_vivaio||'?'); else d='da assegnare';
@@ -418,6 +421,7 @@ document.body.addEventListener('click',async e=>{ const b=e.target.closest('[dat
     case 'p-del': R.dest.splice(j,1); render(); break;
     case 'salva': await salva(); break;
     case 'filtro': filtro=v; render(); break;
+    case 'toggle-ann': mostraAnn=!mostraAnn; render(); break;
     case 'annulla-gruppo': if(window.confirm('Annullare questa raccolta? Resta nello storico come annullata.')) await annullaGruppo(v); break;
     case 'densita': S.densita=v; await salvaImp(); render(); break;
     case 'imp-fattore': Pad.open('1 coffa = ? kg',S.fattore_coffa,async n=>{ if(n&&n>0){ S.fattore_coffa=n; await salvaImp(); render(); } else toast('Serve un numero maggiore di 0'); },{dec:1}); break;
