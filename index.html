@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<title>Registro calibri</title>
+<title>Registro raccolta</title>
 <meta name="theme-color" content="#0B2A3B">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon-192.png">
@@ -72,10 +72,18 @@ input[type=text]{font:inherit;border:1.5px solid var(--ink);border-radius:var(--
 .riga.semina{border-left-color:var(--semina)}
 .riga.mista{border-left-color:var(--mista)}
 .t{font-size:17px;font-weight:800}
+.calpill{color:#fff;font-weight:800;min-height:38px;padding:0 14px;border-radius:19px;background-image:radial-gradient(circle,rgba(255,255,255,.3) 30%,transparent 33%);background-size:8px 8px;text-shadow:0 1px 0 rgba(0,0,0,.3)}
+.calpill.grossa{background-color:var(--grossa);border-color:var(--grossa);background-size:14px 14px}.calpill.mezzana{background-color:var(--mezzana);border-color:var(--mezzana);background-size:9px 9px}.calpill.semina{background-color:var(--semina);border-color:var(--semina);background-size:5px 5px}.calpill.mista{background-color:var(--mista);border-color:var(--mista)}
+.cal>button.add{border-style:dashed;font-weight:700}
+.cal>button.add.grossa{color:var(--grossa)}.cal>button.add.mezzana{color:var(--mezzana)}.cal>button.add.semina{color:var(--semina)}.cal>button.add.mista{color:var(--mista)}
+.destsum{display:block;width:100%;text-align:left;margin-top:8px;min-height:40px;padding:8px 10px;background:var(--acqua);border:1px dashed var(--line);font-weight:600;font-size:15px;line-height:1.35}
+.destbox{margin-top:8px;padding:0 0 4px}
 .s{color:var(--muted);font-size:14px}
 .inline{display:flex;gap:6px;align-items:stretch;margin-top:6px}
-.inline .field{flex:1;margin-top:0}
+.inline .field{flex:1;margin-top:0;min-width:0}
 .inline .chips{flex:0 0 auto}
+.inline .chips>button{padding:0 10px}
+.inline .field .val{font-size:18px}
 .port{border-top:1px dashed var(--line);padding-top:8px;margin-top:8px}
 .row.dest>button{min-height:var(--tap);font-weight:700;padding:0 4px}
 .right{display:flex;justify-content:flex-end;margin-top:4px}
@@ -117,7 +125,7 @@ table.gen .nos{background:var(--acqua);font-weight:800}
 </style>
 </head>
 <body>
-<header class="top"><h1>Registro calibri</h1><span class="badge" id="badge"></span></header>
+<header class="top"><h1>Registro raccolta</h1><span class="badge" id="badge"></span></header>
 <main class="wrap">
   <section class="view on" id="v-nuova"></section>
   <section class="view" id="v-totali"></section>
@@ -150,7 +158,7 @@ table.gen .nos{background:var(--acqua);font-weight:800}
 
 <script>
 'use strict';
-const VERSION='0.5.1';
+const VERSION='0.6.0';
 const CALIBRI=['grossa','mezzana','semina','mista'];
 const NOME={grossa:'Grossa',mezzana:'Mezzana',semina:'Semina',mista:'Mista'};
 const DEST_DEFAULT={grossa:'venduta',mezzana:'riseminata',semina:'riseminata',mista:'riseminata'};
@@ -234,10 +242,13 @@ let S={device:'',fattore_coffa:25,tara_collo:null,vivai:[],compratori:[],densita
 let E=[]; let vista='nuova'; let filtro='mese'; let persisted=null; let mostraAnn=false; let vistaQuota='nostra';
 function nuovaRiga(){ return {calibro:null,qta:null,unita:'kg',split:null,lordo:null,colli:null,tara:null,dest:[]}; }
 function nuovaPort(dest){ return {dest,qta:null,vivaio:'?',compratore:'?',prezzo:null,incassata:false}; }
-function nuovoForm(){ return {passo:1,data:oggiISO(),origine:'?',quota:100,righe:[]}; }
+function ultimoEv(calibro){ let best=null; for(const e of E){ if(e.tipo==='raccolta'&&e.calibro===calibro&&(!best||String(e.ts)>String(best.ts))) best=e; } return best; }
+function portDefault(c,u){ const p=nuovaPort(DEST_DEFAULT[c]); if(u){ if(u.dest) p.dest=u.dest; if(u.dest_vivaio&&u.dest_vivaio!=='?') p.vivaio=u.dest_vivaio; if(u.compratore&&u.compratore!=='?') p.compratore=u.compratore; if(u.prezzo_kg!=null) p.prezzo=u.prezzo_kg; } return p; }
+function nuovaRigaCal(c){ const r=nuovaRiga(); r.calibro=c; const u=ultimoEv(c); r.unita=u?(u.lordo_kg!=null?'lordo':u.unita):(c==='grossa'?'kg':'coffe'); if(r.unita==='lordo') r.tara=S.tara_collo; r.dest=[portDefault(c,u)]; return r; }
+function nuovoForm(){ let last=null; for(const e of E){ if(e.tipo==='raccolta'&&(!last||String(e.ts)>String(last.ts))) last=e; } const o=last&&last.origine_vivaio?last.origine_vivaio:'?'; return {data:oggiISO(),origine:o,quota:quotaVivaio(S,o),righe:[]}; }
 let F=nuovoForm();
 function formDaGruppo(g){ const ann=new Set(E.filter(e=>e.tipo==='annulla').map(e=>e.annulla_id)); const evs=E.filter(e=>e.tipo==='raccolta'&&e.gruppo===g&&!ann.has(e.id)); if(!evs.length) return null;
-  const e0=evs[0]; const F2={passo:1,data:e0.data,origine:e0.origine_vivaio||'?',quota:e0.quota_pct==null?100:e0.quota_pct,righe:[],sostituisce_gruppo:g};
+  const e0=evs[0]; const F2={data:e0.data,origine:e0.origine_vivaio||'?',quota:e0.quota_pct==null?100:e0.quota_pct,righe:[],sostituisce_gruppo:g};
   const key=e=>[e.calibro,e.unita,e.lordo_kg!=null?'lordo':'',e.split_mezzana_pct].join('|'); const map={};
   evs.forEach(e=>{ let r=map[key(e)]; if(!r){ r=nuovaRiga(); r.calibro=e.calibro; r.split=e.split_mezzana_pct; if(e.lordo_kg!=null){ r.unita='lordo'; r.lordo=e.lordo_kg; r.colli=e.colli; r.tara=e.tara_collo; } else { r.unita=e.unita; r.qta=0; } map[key(e)]=r; F2.righe.push(r); }
     if(r.unita!=='lordo') r.qta=round2((r.qta||0)+e.qta);
@@ -282,46 +293,45 @@ function render(){
   renderBar(); renderBadge(); }
 function renderBadge(){ const c=syncCfg(); document.getElementById('badge').textContent=eventiAttivi(E).length+' eventi · '+(c.token?(syncStato||'server'):'solo telefono'); }
 
-function renderNuova(){ document.getElementById('v-nuova').innerHTML=F.passo===1?passo1():passo2(); }
-
-function passo1(){ const std=[100,50].includes(F.quota); const qv=quotaVivaio(S,F.origine);
-  return bannerModifica()+'<h2>Passo 1 di 2 — Raccolta</h2>'
-  +'<div class="field"><span class="lab">Data</span><input type="date" id="f-data" value="'+F.data+'"></div>'
+function renderNuova(){ document.getElementById('v-nuova').innerHTML=bannerModifica()+formNuova(); }
+function formNuova(){ const std=[100,50].includes(F.quota); const qv=quotaVivaio(S,F.origine); const ieri=(()=>{ const d=new Date(); d.setDate(d.getDate()-1); return isoLocal(d); })();
+  return '<h2>Data</h2><div class="inline"><div class="chips">'+btn('Oggi','set-data',{v:oggiISO()},F.data===oggiISO()?'on':'')+btn('Ieri','set-data',{v:ieri},F.data===ieri?'on':'')+'</div><div class="field"><span class="lab">'+giornoSett(F.data)+'</span><input type="date" id="f-data" value="'+F.data+'"></div></div>'
   +'<h2>Da dove</h2>'+chipRow(['?'].concat(nomiVivai()),F.origine,'set-origine',{},'nuovo-vivaio-orig')
   +'<h2>Quota nostra'+(qv!==100?' <span class="s">(a '+esc(F.origine)+' di solito '+fmt(qv,1)+' %)</span>':'')+'</h2><div class="chips">'+['100','50'].map(q=>btn(q+' %','set-quota',{v:q},F.quota===+q?'on':'')).join('')+btn(std?'altro…':fmt(F.quota,1)+' %','set-quota',{v:'altro'},std?'':'on')+'</div>'
-  +'<h2>Calibri raccolti</h2>'
-  +(F.righe.length?F.righe.map((r,i)=>rigaCard(r,i)).join(''):'<div class="empty">Nessun calibro ancora.</div>')
-  +'<button class="primary" style="width:100%;margin-top:8px" data-a="add-riga">+ Aggiungi calibro</button>'; }
+  +'<h2>Raccolto</h2>'+F.righe.map((r,i)=>rigaCard(r,i)).join('')
+  +'<div class="cal" style="margin-top:10px">'+CALIBRI.map(c=>btn('+ '+NOME[c],'add-riga',{v:c},'add '+c)).join('')+'</div>'
+  +(F.righe.length?'':'<div class="s" style="margin-top:8px">Tocca un calibro per aggiungerlo. Destinazione e unità partono da come hai fatto l\'ultima volta.</div>'); }
 
-function rigaCard(r,i){ const q=qtaRiga(r); const u=unitaRiga(r); let extra='';
-  if(r.calibro==='mista'){ const opts=['?','50','60','70','80']; const cur=r.split==null?'?':String(r.split); const other=r.split!=null&&!opts.includes(cur);
-    extra+='<div class="s" style="margin-top:6px">Quanta mezzana, circa?</div><div class="chips">'+opts.map(o=>btn(o==='?'?'non so':o+' %','riga-split',{i,v:o},cur===o?'on':'')).join('')+btn(other?fmt(r.split,0)+' %':'altro…','riga-split',{i,v:'altro'},other?'on':'')+'</div>'; }
+function rigaCard(r,i){ const q=qtaRiga(r); const u=unitaRiga(r); let corpo='';
+  const testa=r.cambia
+    ?'<div class="cal">'+CALIBRI.map(c=>btn(NOME[c],'riga-cal',{i,v:c},r.calibro===c?'on':'')).join('')+'</div>'
+    :'<div class="row" style="align-items:center;gap:8px"><button class="calpill '+r.calibro+'" data-a="riga-cambia" data-i="'+i+'" style="flex:0 0 auto">'+NOME[r.calibro]+'</button>'
+      +(r.calibro==='mista'?splitChips(r,i):'<span class="s">'+(q==null?'':fmt(q,2)+' '+u)+'</span>')+'<button class="ghost danger mini" data-a="riga-del" data-i="'+i+'" style="margin-left:auto">Togli</button></div>';
   const unitaChips='<div class="chips">'+[['kg','kg'],['coffe','coffe'],['lordo','lordo']].map(([v,l])=>btn(l,'riga-unita',{i,v},r.unita===v?'on':'')).join('')+'</div>';
-  if(r.unita==='lordo'){ extra+='<div class="inline">'+fieldBtn('Lordo',r.lordo==null?'—':fmt(r.lordo,2)+' kg','riga-lordo',{i})+unitaChips+'</div>'
+  if(r.unita==='lordo'){ corpo='<div class="inline">'+fieldBtn('Lordo',r.lordo==null?'—':fmt(r.lordo,2)+' kg','riga-lordo',{i})+unitaChips+'</div>'
     +'<div class="inline">'+fieldBtn('Colli',r.colli==null?'—':fmt(r.colli,0),'riga-colli',{i})+fieldBtn('Tara/collo',r.tara==null?'—':fmt(r.tara,2)+' kg','riga-tara',{i})+'</div>'
     +'<div class="s" style="margin-top:6px">Netto: <b>'+(q==null?'—':fmt(q,2)+' kg')+'</b></div>'; }
-  else extra='<div class="inline">'+fieldBtn('Quantità',r.qta==null?'—':fmt(r.qta,2)+' '+u,'riga-qta',{i})+unitaChips+'</div>'+extra;
-  return '<div class="riga '+(r.calibro||'')+'">'
-  +'<div class="cal">'+CALIBRI.map(c=>btn(NOME[c],'riga-cal',{i,v:c},r.calibro===c?'on':'')).join('')+'</div>'
-  +extra
-  +'<div class="right"><button class="ghost danger mini" data-a="riga-del" data-i="'+i+'">Togli</button></div>'
-  +'</div>'; }
+  else corpo='<div class="inline">'+fieldBtn('Quantità',r.qta==null?'—':fmt(r.qta,2)+' '+u,'riga-qta',{i})+unitaChips+'</div>';
+  return '<div class="riga '+r.calibro+'">'+testa+corpo+(r.apri?destEditor(r,i):destSummary(r,i))+'</div>'; }
 
-function passo2(){ return bannerModifica()+'<h2>Passo 2 di 2 — Destinazione</h2>'
-  +'<div class="s">'+giornoSett(F.data)+' '+fmtData(F.data)+' · da '+esc(F.origine)+' · quota '+fmt(F.quota,1)+' %</div>'
-  +F.righe.map((r,i)=>portCard(r,i)).join(''); }
+function splitChips(r,i){ const opts=['?','50','60','70','80']; const cur=r.split==null?'?':String(r.split); const other=r.split!=null&&!opts.includes(cur);
+  return '<div class="chips" style="flex:1">'+opts.map(o=>btn(o==='?'?'mezz. ?':o+' %','riga-split',{i,v:o},cur===o?'on':'')).join('')+btn(other?fmt(r.split,0)+' %':'altro…','riga-split',{i,v:'altro'},other?'on':'')+'</div>'; }
+
+function descPort(p,u,molte){ let d=''; if(p.dest==='venduta') d='venduta a '+esc(p.compratore||'?')+(p.prezzo!=null?' · '+fmt(p.prezzo,2)+' €/kg':' · prezzo ?')+(p.incassata?' · incassata':'');
+  else if(p.dest==='riseminata') d='riseminata in '+esc(p.vivaio||'?'); else d='da assegnare';
+  return (molte?'<b>'+fmt(p.qta,2)+' '+u+'</b> ':'')+d; }
+function destSummary(r,i){ const q=qtaRiga(r); const u=unitaRiga(r); const ps=portionsWithResto(r,q); const molte=ps.length>1;
+  return '<button class="destsum" data-a="p-apri" data-i="'+i+'">→ '+ps.map(p=>descPort(p,u,molte)).join('<br>→ ')+'<span class="s" style="float:right">cambia</span></button>'; }
 
 function destRow(sel,i,j){ return '<div class="row dest">'+[['riseminata','Riseminata'],['venduta','Venduta'],['da_assegnare','Da assegnare']].map(([v,l])=>btn(l,'p-dest',{i,j,v},sel===v?'on':'')).join('')+'</div>'; }
-
-function portCard(r,i){ const q=qtaRiga(r); const u=unitaRiga(r); const ps=portionsWithResto(r,q); const resto=ps[ps.length-1].qta; const molte=r.dest.length>1;
+function destEditor(r,i){ const q=qtaRiga(r); const u=unitaRiga(r); const ps=portionsWithResto(r,q); const resto=ps[ps.length-1].qta; const molte=r.dest.length>1;
   const parts=r.dest.map((p,j)=>{ const last=j===r.dest.length-1; let inner='';
     if(p.dest==='riseminata') inner='<div class="s" style="margin-top:6px">In quale vivaio</div>'+chipRow(['?'].concat(nomiVivai()),p.vivaio,'p-vivaio',{i,j},'nuovo-vivaio');
     if(p.dest==='venduta') inner='<div class="s" style="margin-top:6px">A chi</div>'+chipRow(['?'].concat(S.compratori),p.compratore,'p-comp',{i,j},'nuovo-comp')
       +'<div class="inline">'+fieldBtn('€/kg',p.prezzo==null?'?':fmt(p.prezzo,2),'p-prezzo',{i,j})+'<div class="chips">'+btn(p.incassata?'Incassata':'Da incassare','p-inc',{i,j},p.incassata?'on':'')+'</div></div>';
     let qh=''; if(molte){ qh=last?'<div class="s" style="margin-top:6px">Resto: <b class="'+(resto<0?'stim':'')+'">'+fmt(resto,2)+' '+u+'</b></div>':fieldBtn('Quanto',p.qta==null?'—':fmt(p.qta,2)+' '+u,'p-qta',{i,j}); }
-    return '<div class="port">'+destRow(p.dest,i,j)+qh+inner+(molte?'<div class="right"><button class="ghost danger mini" data-a="p-del" data-i="'+i+'" data-j="'+j+'">Togli</button></div>':'')+'</div>'; }).join('');
-  return '<div class="riga '+r.calibro+'"><div class="t">'+NOME[r.calibro]+' · '+fmt(q,2)+' '+u+'</div>'+parts
-  +(r.dest.length<4?'<button class="ghost mini" style="margin-top:6px" data-a="p-add" data-i="'+i+'">+ Dividi la destinazione</button>':'')+'</div>'; }
+    return '<div class="port">'+destRow(p.dest,i,j)+qh+inner+(molte?'<div class="right"><button class="ghost danger mini" data-a="p-del" data-i="'+i+'" data-j="'+j+'">Togli parte</button></div>':'')+'</div>'; }).join('');
+  return '<div class="destbox">'+parts+'<div class="row" style="margin-top:8px">'+(r.dest.length<4?'<button class="ghost mini" data-a="p-add" data-i="'+i+'" style="flex:0 0 auto">+ Dividi</button>':'')+'<button class="mini" data-a="p-chiudi" data-i="'+i+'" style="margin-left:auto;flex:0 0 auto">Fatto</button></div></div>'; }
 
 // un numero solo: somma certo+stimato, con ≈ davanti se c'è una stima dentro
 function numK(o,d){ d=d==null?0:d; const t=(o.c||0)+(o.s||0); return (o.s?'<span class="stim">≈</span>':'')+fmt(t,d); }
@@ -392,16 +402,15 @@ function renderImpostazioni(){ const el=document.getElementById('v-impostazioni'
   +'<input type="file" id="f-import" accept="application/json,.json" style="display:none">'
   +'<div class="s" style="margin-top:6px">'+eventiAttivi(E).length+' eventi attivi sul telefono · storage protetto: '+(persisted===true?'sì':persisted===false?'no':'?')+(c.token?'':' · <b>senza server: esporta a fine giornata</b>')+'</div>'
   +'<h2>Questo dispositivo</h2><input type="text" id="f-device" value="'+esc(S.device)+'" placeholder="es. telefono">'
-  +'<div class="s" style="margin-top:20px">Registro calibri v'+VERSION+'</div>'; }
-async function scaricaCsv(){ const c=syncCfg(); try{ const r=await fetch('./api/export.csv',{headers:{'Authorization':'Bearer '+c.token}}); if(!r.ok) throw new Error('server '+r.status); const blob=await r.blob(); const name='registro-calibri-'+oggiISO().replace(/-/g,'')+'.csv';
+  +'<div class="s" style="margin-top:20px">Registro raccolta v'+VERSION+'</div>'; }
+async function scaricaCsv(){ const c=syncCfg(); try{ const r=await fetch('./api/export.csv',{headers:{'Authorization':'Bearer '+c.token}}); if(!r.ok) throw new Error('server '+r.status); const blob=await r.blob(); const name='registro-raccolta-'+oggiISO().replace(/-/g,'')+'.csv';
     if(navigator.canShare&&typeof File!=='undefined'){ const file=new File([blob],name,{type:'text/csv'}); if(navigator.canShare({files:[file]})){ try{ await navigator.share({files:[file],title:name}); return; }catch(e){ if(e&&e.name==='AbortError') return; } } }
     const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove(); toast('Scaricato '+name); }
   catch(e){ toast('CSV non scaricato: '+(e&&e.message?e.message:e)); } }
 function renderBar(){ const bar=document.getElementById('bar'); if(vista!=='nuova'){ bar.style.display='none'; document.body.classList.remove('has-bar'); return; }
   bar.style.display='flex'; document.body.classList.add('has-bar');
-  bar.innerHTML=F.passo===1
-    ?'<button class="ghost" data-a="svuota" style="flex:0 0 auto">Svuota</button><button class="primary" data-a="avanti">Avanti</button>'
-    :'<button data-a="indietro" style="flex:0 0 auto">Indietro</button><button class="salva" data-a="salva">'+(F.sostituisce_gruppo?'Salva modifica':'Salva raccolta')+'</button>'; }
+  const nr=F.righe.length;
+  bar.innerHTML='<button class="ghost" data-a="svuota" style="flex:0 0 auto">Svuota</button><button class="salva" data-a="salva"'+(nr?'':' disabled')+'>'+(F.sostituisce_gruppo?'Salva modifica':'Salva raccolta')+(nr?' · '+nr+(nr===1?' riga':' righe'):'')+'</button>'; }
 
 // ----- validazione e salvataggio -----
 function validaPasso1(){ if(!F.data) return 'Manca la data'; if(!F.righe.length) return 'Aggiungi almeno un calibro';
@@ -412,7 +421,7 @@ function validaPasso2(){ for(const r of F.righe){ const q=qtaRiga(r); const ps=p
     for(let j=0;j<ps.length;j++){ const p=ps[j]; if(!p.dest) return NOME[r.calibro]+': scegli la destinazione'; if(j<ps.length-1&&(p.qta==null||p.qta<=0)) return NOME[r.calibro]+': quantità della parte '+(j+1)+' mancante'; }
     if(ps[ps.length-1].qta<0) return NOME[r.calibro]+': le parti superano '+fmt(q,2);
     if(ps.length>1&&ps[ps.length-1].qta===0) return NOME[r.calibro]+': il resto è 0, togli l\'ultima destinazione'; } return null; }
-async function salva(){ const err=validaPasso2(); if(err){ toast(err); return; } const ev=buildEventi(F,S); let extra=[];
+async function salva(){ const err=validaPasso1()||validaPasso2(); if(err){ toast(err); return; } const ev=buildEventi(F,S); let extra=[];
   if(F.sostituisce_gruppo){ const g=F.sostituisce_gruppo; const ann=new Set(E.filter(e=>e.tipo==='annulla').map(e=>e.annulla_id)); const old=E.filter(e=>e.tipo==='raccolta'&&e.gruppo===g&&!ann.has(e.id)); const ts=new Date().toISOString();
     extra=old.map(t=>({id:uuid(),ts,device:S.device,tipo:'annulla',annulla_id:t.id,gruppo:g,motivo:'modifica'})); ev.forEach(e=>{ e.sostituisce_gruppo=g; }); }
   try{ await DB.putMany('eventi',extra.concat(ev)); E.push(...extra,...ev); accoda(extra.concat(ev).map(e=>e.id)); await salvaImp(); sync(); const mod=!!F.sostituisce_gruppo; F=nuovoForm(); toast(mod?'Modifica salvata':'Salvata: '+ev.length+(ev.length===1?' evento':' eventi')); render(); window.scrollTo(0,0); }
@@ -425,8 +434,8 @@ async function nuovoNome(titolo,lista){ const n=(window.prompt(titolo)||'').trim
   else if(!S.compratori.includes(n)){ S.compratori.push(n); await salvaImp(); } return n; }
 
 // ----- export / import -----
-async function esporta(){ const payload={schema:1,app:'registro-calibri',versione:VERSION,esportato_il:new Date().toISOString(),device:S.device,impostazioni:Object.assign({},S,{sync:Object.assign({},syncCfg(),{token:''})}),eventi:E};
-  const txt=JSON.stringify(payload,null,1); const name='registro-calibri-'+oggiISO().replace(/-/g,'')+'.json';
+async function esporta(){ const payload={schema:1,app:'registro-raccolta',versione:VERSION,esportato_il:new Date().toISOString(),device:S.device,impostazioni:Object.assign({},S,{sync:Object.assign({},syncCfg(),{token:''})}),eventi:E};
+  const txt=JSON.stringify(payload,null,1); const name='registro-raccolta-'+oggiISO().replace(/-/g,'')+'.json';
   if(navigator.canShare&&typeof File!=='undefined'){ try{ const file=new File([txt],name,{type:'application/json'}); if(navigator.canShare({files:[file]})){ await navigator.share({files:[file],title:name}); return; } }catch(e){ if(e&&e.name==='AbortError') return; } }
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'})); a.download=name; document.body.appendChild(a); a.click(); a.remove(); toast('File scaricato: '+name); }
 async function importa(file){ let p; try{ p=JSON.parse(await file.text()); }catch(e){ toast('File non leggibile: non è JSON'); return; }
@@ -463,8 +472,12 @@ document.body.addEventListener('click',async e=>{ const b=e.target.closest('[dat
     case 'set-origine': F.origine=v; F.quota=quotaVivaio(S,v); render(); break;
     case 'nuovo-vivaio-orig': { const n=await nuovoNome('Nome del vivaio','vivai'); if(n){ F.origine=n; F.quota=quotaVivaio(S,n); } render(); break; }
     case 'set-quota': if(v==='altro') Pad.open('Quota nostra (%)',[100,50].includes(F.quota)?null:F.quota,n=>{ if(n!=null&&n>0&&n<=100){ F.quota=n; render(); } else toast('Quota fra 1 e 100'); },{dec:1}); else { F.quota=+v; render(); } break;
-    case 'add-riga': F.righe.push(nuovaRiga()); render(); break;
-    case 'riga-cal': R.calibro=v; render(); break;
+    case 'set-data': F.data=v; render(); break;
+    case 'add-riga': F.righe.push(nuovaRigaCal(v)); render(); break;
+    case 'riga-cambia': R.cambia=!R.cambia; render(); break;
+    case 'riga-cal': { if(R.calibro!==v){ const u=ultimoEv(v); R.calibro=v; R.split=null; R.dest=[portDefault(v,u)]; } R.cambia=false; render(); break; }
+    case 'p-apri': R.apri=true; render(); break;
+    case 'p-chiudi': R.apri=false; render(); break;
     case 'riga-unita': R.unita=v; if(v==='lordo'&&R.tara==null) R.tara=S.tara_collo; render(); break;
     case 'riga-qta': Pad.open('Quantità in '+unitaRiga(R),R.qta,n=>{ R.qta=n; render(); }); break;
     case 'riga-split': if(v==='?'){ R.split=null; render(); } else if(v==='altro') Pad.open('Mezzana, circa (%)',R.split,n=>{ if(n==null||(n>=0&&n<=100)){ R.split=n; render(); } else toast('Percentuale fra 0 e 100'); },{dec:0}); else { R.split=+v; render(); } break;
@@ -473,8 +486,6 @@ document.body.addEventListener('click',async e=>{ const b=e.target.closest('[dat
     case 'riga-tara': Pad.open('Tara per collo (kg)',R.tara,n=>{ R.tara=n; render(); }); break;
     case 'riga-del': F.righe.splice(i,1); render(); break;
     case 'svuota': if(!F.righe.length||window.confirm('Svuotare la raccolta in corso?')){ F=nuovoForm(); render(); } break;
-    case 'avanti': { const err=validaPasso1(); if(err){ toast(err); break; } F.righe.forEach(r=>{ if(!r.dest.length) r.dest=[nuovaPort(DEST_DEFAULT[r.calibro])]; }); F.passo=2; render(); window.scrollTo(0,0); break; }
-    case 'indietro': F.passo=1; render(); window.scrollTo(0,0); break;
     case 'p-dest': P.dest=v; render(); break;
     case 'p-qta': Pad.open('Quanto ('+unitaRiga(R)+')',P.qta,n=>{ P.qta=n; render(); }); break;
     case 'p-vivaio': P.vivaio=v; render(); break;
@@ -522,7 +533,7 @@ document.body.addEventListener('change',async e=>{ const t=e.target;
   E=await DB.all('eventi'); E.sort((a,b)=>String(a.ts).localeCompare(String(b.ts)));
   try{ if(navigator.storage&&navigator.storage.persist) persisted=await navigator.storage.persist(); }catch(e){}
   if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
-  render(); sync();
+  F=nuovoForm(); render(); sync();
   window.addEventListener('online',()=>sync()); document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') sync(); });
 })();
 </script>
