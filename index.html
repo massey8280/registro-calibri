@@ -139,7 +139,7 @@ table.gen .nos{background:var(--acqua);font-weight:800}
 
 <script>
 'use strict';
-const VERSION='0.4.0';
+const VERSION='0.5.0';
 const CALIBRI=['grossa','mezzana','semina','mista'];
 const NOME={grossa:'Grossa',mezzana:'Mezzana',semina:'Semina',mista:'Mista'};
 const DEST_DEFAULT={grossa:'venduta',mezzana:'riseminata',semina:'riseminata',mista:'riseminata'};
@@ -234,6 +234,26 @@ function formDaGruppo(g){ const ann=new Set(E.filter(e=>e.tipo==='annulla').map(
   return F2; }
 function bannerModifica(){ if(!F.sostituisce_gruppo) return ''; return '<div class="warn">Stai modificando la raccolta del '+fmtData(F.data)+'. Salvando, la versione precedente viene annullata e resta nello storico. '+btn('Lascia stare','svuota',{},'ghost mini')+'</div>'; }
 async function salvaImp(){ await DB.setKv('impostazioni',S); }
+// ----- sync con il server: push della outbox (pendenti), poi pull incrementale per seq -----
+function syncCfg(){ if(!S.sync) S.sync={token:'',lastSeq:0,pendenti:[],ultima:null}; return S.sync; }
+let syncInCorso=false; let syncStato='';
+async function api(path,opts){ const c=syncCfg(); const r=await fetch('./api/'+path,Object.assign({headers:{'Authorization':'Bearer '+c.token,'Content-Type':'application/json'}},opts||{}));
+  if(r.status===401) throw new Error('token rifiutato'); if(!r.ok) throw new Error('server '+r.status); return r.json(); }
+async function sync(){ const c=syncCfg(); if(!c.token){ syncStato=''; renderBadge(); return; }
+  if(!navigator.onLine){ syncStato='offline'+(c.pendenti.length?' · '+c.pendenti.length+' da inviare':''); renderBadge(); return; }
+  if(syncInCorso) return; syncInCorso=true; syncStato='sincronizzo…'; renderBadge(); let nuovi=0;
+  try{
+    for(let giro=0; c.pendenti.length&&giro<20; giro++){ const byId=new Map(E.map(e=>[e.id,e])); const ids=c.pendenti.slice(0,400); const evs=ids.map(i=>byId.get(i)).filter(Boolean);
+      const r=await api('eventi/',{method:'POST',body:JSON.stringify({eventi:evs})}); const ok=new Set(r.accettati);
+      c.pendenti=c.pendenti.filter(i=>!ok.has(i)&&byId.has(i)); await salvaImp(); if(!r.accettati.length) break; }
+    for(let giro=0; giro<20; giro++){ const r=await api('eventi/?since='+c.lastSeq); const loc=new Set(E.map(e=>e.id)); const fresh=r.eventi.filter(e=>e&&typeof e.id==='string'&&!loc.has(e.id));
+      if(fresh.length){ nuovi+=await DB.addMany('eventi',fresh); E=await DB.all('eventi'); E.sort((a,b)=>String(a.ts).localeCompare(String(b.ts))); }
+      c.lastSeq=r.seq; await salvaImp(); if(!r.altro) break; }
+    c.ultima=new Date().toISOString(); syncStato=c.pendenti.length?c.pendenti.length+' da inviare':'sincronizzato'; await salvaImp();
+    if(nuovi&&vista!=='nuova') render(); else renderBadge();
+  }catch(e){ syncStato='errore: '+(e&&e.message?e.message:e); renderBadge(); }
+  finally{ syncInCorso=false; } }
+function accoda(ids){ const c=syncCfg(); c.pendenti.push(...ids); }
 function nomiVivai(){ return S.vivai.map(v=>v.nome); }
 
 // ----- helper html -----
@@ -248,7 +268,8 @@ function render(){
   Object.keys(TAB).forEach(k=>document.getElementById(TAB[k]).classList.toggle('on',k===vista));
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===vista));
   if(vista==='nuova') renderNuova(); else if(vista==='totali') renderTotali(); else if(vista==='registro') renderRegistro(); else renderImpostazioni();
-  renderBar(); document.getElementById('badge').textContent=eventiAttivi(E).length+' eventi · locale'; }
+  renderBar(); renderBadge(); }
+function renderBadge(){ const c=syncCfg(); document.getElementById('badge').textContent=eventiAttivi(E).length+' eventi · '+(c.token?(syncStato||'server'):'solo telefono'); }
 
 function renderNuova(){ document.getElementById('v-nuova').innerHTML=F.passo===1?passo1():passo2(); }
 
@@ -352,6 +373,9 @@ function renderImpostazioni(){ const el=document.getElementById('v-impostazioni'
   +'<div class="field"><span class="lab">Storage protetto dal browser</span><span class="val">'+(persisted===true?'sì':persisted===false?'no':'?')+'</span></div>'
   +'<div class="row" style="margin-top:8px"><button class="primary" data-a="esporta">Esporta JSON</button><button data-a="importa">Importa JSON</button></div>'
   +'<input type="file" id="f-import" accept="application/json,.json" style="display:none">'
+  +'<h2>Server</h2>'+(syncCfg().token
+    ?'<div class="field"><span class="lab">Stato</span><span class="val" style="font-size:15px">'+esc(syncStato||'collegato')+'</span></div><div class="field"><span class="lab">Ultima sync</span><span class="val" style="font-size:15px">'+(syncCfg().ultima?fmtData(syncCfg().ultima.slice(0,10))+' '+syncCfg().ultima.slice(11,16)+' UTC':'mai')+'</span></div><div class="field"><span class="lab">Da inviare</span><span class="val">'+syncCfg().pendenti.length+'</span></div><div class="row" style="margin-top:8px"><button class="primary" data-a="sync-ora">Sincronizza ora</button><button data-a="sync-scollega" class="danger">Scollega</button></div>'
+    :'<div class="s">Incolla il token del server e collega: da lì ogni raccolta viene copiata sul VPS appena c\'è rete.</div><input type="text" id="f-token" placeholder="token" autocomplete="off" autocapitalize="off" spellcheck="false" style="margin-top:6px"><div class="row" style="margin-top:8px"><button class="primary" data-a="sync-collega">Collega</button></div>')
   +'<h2>Aspetto</h2><div class="chips">'+btn('Compatta','densita',{v:'compatta'},S.densita!=='barca'?'on':'')+btn('Barca: tutto più grande','densita',{v:'barca'},S.densita==='barca'?'on':'')+'</div>'
   +'<h2>Vivai <span class="s">(tocca per la quota nostra abituale)</span></h2>'+vivChips
   +'<h2>Compratori</h2>'+compChips
@@ -379,17 +403,17 @@ function validaPasso2(){ for(const r of F.righe){ const q=qtaRiga(r); const ps=p
 async function salva(){ const err=validaPasso2(); if(err){ toast(err); return; } const ev=buildEventi(F,S); let extra=[];
   if(F.sostituisce_gruppo){ const g=F.sostituisce_gruppo; const ann=new Set(E.filter(e=>e.tipo==='annulla').map(e=>e.annulla_id)); const old=E.filter(e=>e.tipo==='raccolta'&&e.gruppo===g&&!ann.has(e.id)); const ts=new Date().toISOString();
     extra=old.map(t=>({id:uuid(),ts,device:S.device,tipo:'annulla',annulla_id:t.id,gruppo:g,motivo:'modifica'})); ev.forEach(e=>{ e.sostituisce_gruppo=g; }); }
-  try{ await DB.putMany('eventi',extra.concat(ev)); E.push(...extra,...ev); const mod=!!F.sostituisce_gruppo; F=nuovoForm(); toast(mod?'Modifica salvata':'Salvata: '+ev.length+(ev.length===1?' evento':' eventi')); render(); window.scrollTo(0,0); }
+  try{ await DB.putMany('eventi',extra.concat(ev)); E.push(...extra,...ev); accoda(extra.concat(ev).map(e=>e.id)); await salvaImp(); sync(); const mod=!!F.sostituisce_gruppo; F=nuovoForm(); toast(mod?'Modifica salvata':'Salvata: '+ev.length+(ev.length===1?' evento':' eventi')); render(); window.scrollTo(0,0); }
   catch(e){ toast('Non salvato: '+(e&&e.message?e.message:e)); } }
 async function annullaGruppo(g){ const ann=new Set(E.filter(e=>e.tipo==='annulla').map(e=>e.annulla_id)); const targets=E.filter(e=>e.tipo==='raccolta'&&e.gruppo===g&&!ann.has(e.id)); if(!targets.length) return;
   const ts=new Date().toISOString(); const evs=targets.map(t=>({id:uuid(),ts,device:S.device,tipo:'annulla',annulla_id:t.id,gruppo:g}));
-  try{ await DB.putMany('eventi',evs); E.push(...evs); toast('Raccolta annullata'); render(); }catch(e){ toast('Non annullata: '+(e&&e.message?e.message:e)); } }
+  try{ await DB.putMany('eventi',evs); E.push(...evs); accoda(evs.map(e=>e.id)); await salvaImp(); sync(); toast('Raccolta annullata'); render(); }catch(e){ toast('Non annullata: '+(e&&e.message?e.message:e)); } }
 async function nuovoNome(titolo,lista){ const n=(window.prompt(titolo)||'').trim(); if(!n) return null;
   if(lista==='vivai'){ if(!S.vivai.some(v=>v.nome===n)){ S.vivai.push({nome:n,quota_pct:100}); await salvaImp(); } }
   else if(!S.compratori.includes(n)){ S.compratori.push(n); await salvaImp(); } return n; }
 
 // ----- export / import -----
-async function esporta(){ const payload={schema:1,app:'registro-calibri',versione:VERSION,esportato_il:new Date().toISOString(),device:S.device,impostazioni:S,eventi:E};
+async function esporta(){ const payload={schema:1,app:'registro-calibri',versione:VERSION,esportato_il:new Date().toISOString(),device:S.device,impostazioni:Object.assign({},S,{sync:Object.assign({},syncCfg(),{token:''})}),eventi:E};
   const txt=JSON.stringify(payload,null,1); const name='registro-calibri-'+oggiISO().replace(/-/g,'')+'.json';
   if(navigator.canShare&&typeof File!=='undefined'){ try{ const file=new File([txt],name,{type:'application/json'}); if(navigator.canShare({files:[file]})){ await navigator.share({files:[file],title:name}); return; } }catch(e){ if(e&&e.name==='AbortError') return; } }
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'})); a.download=name; document.body.appendChild(a); a.click(); a.remove(); toast('File scaricato: '+name); }
@@ -399,6 +423,7 @@ async function importa(file){ let p; try{ p=JSON.parse(await file.text()); }catc
   let n=0; try{ n=await DB.addMany('eventi',validi); }catch(e){ toast('Import fallito: '+(e&&e.message?e.message:e)); return; }
   if(p&&p.impostazioni){ normVivai(p.impostazioni.vivai).forEach(v=>{ if(!S.vivai.some(x=>x.nome===v.nome)) S.vivai.push(v); }); S.compratori=[...new Set(S.compratori.concat(p.impostazioni.compratori||[]))]; await salvaImp(); }
   E=await DB.all('eventi'); E.sort((a,b)=>String(a.ts).localeCompare(String(b.ts)));
+  accoda(validi.map(e=>e.id)); await salvaImp(); sync();
   toast('Importati '+n+' eventi nuovi, '+(validi.length-n)+' già presenti'); render(); }
 
 // ----- numpad -----
@@ -452,6 +477,9 @@ document.body.addEventListener('click',async e=>{ const b=e.target.closest('[dat
     case 'filtro': filtro=v; render(); break;
     case 'toggle-ann': mostraAnn=!mostraAnn; render(); break;
     case 'vista-quota': vistaQuota=v; render(); break;
+    case 'sync-collega': { const t=(document.getElementById('f-token').value||'').trim(); if(!t){ toast('Token vuoto'); break; } const c=syncCfg(); c.token=t; c.lastSeq=0; c.pendenti=E.map(e=>e.id); await salvaImp(); await sync(); render(); break; }
+    case 'sync-ora': await sync(); render(); break;
+    case 'sync-scollega': if(window.confirm('Scollegare il server? I dati restano sul telefono e sul server.')){ const c=syncCfg(); c.token=''; syncStato=''; await salvaImp(); render(); } break;
     case 'modifica-gruppo': { if(F.righe.length&&!window.confirm('Hai una raccolta in corso non salvata: la scarto?')) break; const f=formDaGruppo(v); if(!f){ toast('Raccolta non trovata'); break; } F=f; vista='nuova'; render(); window.scrollTo(0,0); break; }
     case 'annulla-gruppo': if(window.confirm('Annullare questa raccolta? Resta nello storico come annullata.')) await annullaGruppo(v); break;
     case 'densita': S.densita=v; await salvaImp(); render(); break;
@@ -481,7 +509,8 @@ document.body.addEventListener('change',async e=>{ const t=e.target;
   E=await DB.all('eventi'); E.sort((a,b)=>String(a.ts).localeCompare(String(b.ts)));
   try{ if(navigator.storage&&navigator.storage.persist) persisted=await navigator.storage.persist(); }catch(e){}
   if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
-  render();
+  render(); sync();
+  window.addEventListener('online',()=>sync()); document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') sync(); });
 })();
 </script>
 </body>
