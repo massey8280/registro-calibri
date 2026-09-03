@@ -132,7 +132,7 @@ table.gen .nos{font-weight:700;background:var(--field)}
 
 <script>
 'use strict';
-const VERSION='0.3.0';
+const VERSION='0.3.1';
 const CALIBRI=['grossa','mezzana','semina','mista'];
 const NOME={grossa:'Grossa',mezzana:'Mezzana',semina:'Semina',mista:'Mista'};
 const DEST_DEFAULT={grossa:'venduta',mezzana:'riseminata',semina:'riseminata',mista:'riseminata'};
@@ -218,6 +218,14 @@ function nuovaRiga(){ return {calibro:null,qta:null,unita:'kg',split:null,lordo:
 function nuovaPort(dest){ return {dest,qta:null,vivaio:'?',compratore:'?',prezzo:null,incassata:false}; }
 function nuovoForm(){ return {passo:1,data:oggiISO(),origine:'?',quota:100,righe:[]}; }
 let F=nuovoForm();
+function formDaGruppo(g){ const ann=new Set(E.filter(e=>e.tipo==='annulla').map(e=>e.annulla_id)); const evs=E.filter(e=>e.tipo==='raccolta'&&e.gruppo===g&&!ann.has(e.id)); if(!evs.length) return null;
+  const e0=evs[0]; const F2={passo:1,data:e0.data,origine:e0.origine_vivaio||'?',quota:e0.quota_pct==null?100:e0.quota_pct,righe:[],sostituisce_gruppo:g};
+  const key=e=>[e.calibro,e.unita,e.lordo_kg!=null?'lordo':'',e.split_mezzana_pct].join('|'); const map={};
+  evs.forEach(e=>{ let r=map[key(e)]; if(!r){ r=nuovaRiga(); r.calibro=e.calibro; r.split=e.split_mezzana_pct; if(e.lordo_kg!=null){ r.unita='lordo'; r.lordo=e.lordo_kg; r.colli=e.colli; r.tara=e.tara_collo; } else { r.unita=e.unita; r.qta=0; } map[key(e)]=r; F2.righe.push(r); }
+    if(r.unita!=='lordo') r.qta=round2((r.qta||0)+e.qta);
+    r.dest.push({dest:e.dest,qta:e.qta,vivaio:e.dest_vivaio||'?',compratore:e.compratore||'?',prezzo:e.prezzo_kg,incassata:!!e.incassata_il}); });
+  return F2; }
+function bannerModifica(){ if(!F.sostituisce_gruppo) return ''; return '<div class="warn">Stai modificando la raccolta del '+fmtData(F.data)+'. Salvando, la versione precedente viene annullata e resta nello storico. '+btn('Lascia stare','svuota',{},'ghost mini')+'</div>'; }
 async function salvaImp(){ await DB.setKv('impostazioni',S); }
 function nomiVivai(){ return S.vivai.map(v=>v.nome); }
 
@@ -238,7 +246,7 @@ function render(){
 function renderNuova(){ document.getElementById('v-nuova').innerHTML=F.passo===1?passo1():passo2(); }
 
 function passo1(){ const std=[100,50].includes(F.quota); const qv=quotaVivaio(S,F.origine);
-  return '<h2>Passo 1 di 2 — Raccolta</h2>'
+  return bannerModifica()+'<h2>Passo 1 di 2 — Raccolta</h2>'
   +'<div class="field"><span class="lab">Data</span><input type="date" id="f-data" value="'+F.data+'"></div>'
   +'<h2>Da dove</h2>'+chipRow(['?'].concat(nomiVivai()),F.origine,'set-origine',{},'nuovo-vivaio-orig')
   +'<h2>Quota nostra'+(qv!==100?' <span class="s">(a '+esc(F.origine)+' di solito '+fmt(qv,1)+' %)</span>':'')+'</h2><div class="chips">'+['100','50'].map(q=>btn(q+' %','set-quota',{v:q},F.quota===+q?'on':'')).join('')+btn(std?'altro…':fmt(F.quota,1)+' %','set-quota',{v:'altro'},std?'':'on')+'</div>'
@@ -260,7 +268,7 @@ function rigaCard(r,i){ const q=qtaRiga(r); const u=unitaRiga(r); let extra='';
   +'<div class="right"><button class="ghost danger mini" data-a="riga-del" data-i="'+i+'">Togli</button></div>'
   +'</div>'; }
 
-function passo2(){ return '<h2>Passo 2 di 2 — Destinazione</h2>'
+function passo2(){ return bannerModifica()+'<h2>Passo 2 di 2 — Destinazione</h2>'
   +'<div class="s">'+giornoSett(F.data)+' '+fmtData(F.data)+' · da '+esc(F.origine)+' · quota '+fmt(F.quota,1)+' %</div>'
   +F.righe.map((r,i)=>portCard(r,i)).join(''); }
 
@@ -326,7 +334,7 @@ function renderRegistro(){ const el=document.getElementById('v-registro'); const
       const lordo=e.lordo_kg!=null?' <span class="s">(lordo '+fmt(e.lordo_kg,2)+', '+fmt(e.colli,0)+' colli)</span>':'';
       return '<div class="ev '+e.calibro+(a?' ann':'')+'"><b>'+NOME[e.calibro]+'</b>'+m+' '+fmt(e.qta,2)+' '+e.unita+lordo+' → '+d+'</div>'; }).join('');
     return '<div class="grp'+(tuttiAnn?' ann':'')+'"><div class="t" style="font-size:15px">'+giornoSett(e0.data)+' '+fmtData(e0.data)+' <span class="s">· da '+esc(e0.origine_vivaio||'?')+(e0.quota_pct!==100?' · quota '+fmt(e0.quota_pct,1)+' %':'')+'</span></div>'+righe
-    +(tuttiAnn?'<div class="s" style="margin-top:4px">annullata</div>':'<div class="right"><button class="ghost danger mini" data-a="annulla-gruppo" data-v="'+e0.gruppo+'">Annulla</button></div>')+'</div>'; }).join(''); }
+    +(tuttiAnn?'<div class="s" style="margin-top:4px">annullata</div>':'<div class="right" style="gap:6px">'+(e0.sostituisce_gruppo?'<span class="s" style="align-self:center;margin-right:auto">modificata</span>':'')+'<button class="ghost mini" data-a="modifica-gruppo" data-v="'+e0.gruppo+'">Modifica</button><button class="ghost danger mini" data-a="annulla-gruppo" data-v="'+e0.gruppo+'">Annulla</button></div>')+'</div>'; }).join(''); }
 
 function renderImpostazioni(){ const el=document.getElementById('v-impostazioni');
   const vivChips='<div class="chips">'+S.vivai.map(v=>btn(esc(v.nome)+(v.quota_pct!==100?' · '+fmt(v.quota_pct,1)+' %':''),'imp-vivaio-quota',{v:v.nome})+btn('✕','imp-vivaio-del',{v:v.nome},'mini danger')).join('')+btn('+ nuovo','imp-vivaio-add',{},'ghost')+'</div>';
@@ -350,7 +358,7 @@ function renderBar(){ const bar=document.getElementById('bar'); if(vista!=='nuov
   bar.style.display='flex'; document.body.classList.add('has-bar');
   bar.innerHTML=F.passo===1
     ?'<button class="ghost" data-a="svuota" style="flex:0 0 auto">Svuota</button><button class="primary" data-a="avanti">Avanti</button>'
-    :'<button data-a="indietro" style="flex:0 0 auto">Indietro</button><button class="salva" data-a="salva">Salva raccolta</button>'; }
+    :'<button data-a="indietro" style="flex:0 0 auto">Indietro</button><button class="salva" data-a="salva">'+(F.sostituisce_gruppo?'Salva modifica':'Salva raccolta')+'</button>'; }
 
 // ----- validazione e salvataggio -----
 function validaPasso1(){ if(!F.data) return 'Manca la data'; if(!F.righe.length) return 'Aggiungi almeno un calibro';
@@ -361,8 +369,10 @@ function validaPasso2(){ for(const r of F.righe){ const q=qtaRiga(r); const ps=p
     for(let j=0;j<ps.length;j++){ const p=ps[j]; if(!p.dest) return NOME[r.calibro]+': scegli la destinazione'; if(j<ps.length-1&&(p.qta==null||p.qta<=0)) return NOME[r.calibro]+': quantità della parte '+(j+1)+' mancante'; }
     if(ps[ps.length-1].qta<0) return NOME[r.calibro]+': le parti superano '+fmt(q,2);
     if(ps.length>1&&ps[ps.length-1].qta===0) return NOME[r.calibro]+': il resto è 0, togli l\'ultima destinazione'; } return null; }
-async function salva(){ const err=validaPasso2(); if(err){ toast(err); return; } const ev=buildEventi(F,S);
-  try{ await DB.putMany('eventi',ev); E.push(...ev); F=nuovoForm(); toast('Salvata: '+ev.length+(ev.length===1?' evento':' eventi')); render(); window.scrollTo(0,0); }
+async function salva(){ const err=validaPasso2(); if(err){ toast(err); return; } const ev=buildEventi(F,S); let extra=[];
+  if(F.sostituisce_gruppo){ const g=F.sostituisce_gruppo; const ann=new Set(E.filter(e=>e.tipo==='annulla').map(e=>e.annulla_id)); const old=E.filter(e=>e.tipo==='raccolta'&&e.gruppo===g&&!ann.has(e.id)); const ts=new Date().toISOString();
+    extra=old.map(t=>({id:uuid(),ts,device:S.device,tipo:'annulla',annulla_id:t.id,gruppo:g,motivo:'modifica'})); ev.forEach(e=>{ e.sostituisce_gruppo=g; }); }
+  try{ await DB.putMany('eventi',extra.concat(ev)); E.push(...extra,...ev); const mod=!!F.sostituisce_gruppo; F=nuovoForm(); toast(mod?'Modifica salvata':'Salvata: '+ev.length+(ev.length===1?' evento':' eventi')); render(); window.scrollTo(0,0); }
   catch(e){ toast('Non salvato: '+(e&&e.message?e.message:e)); } }
 async function annullaGruppo(g){ const ann=new Set(E.filter(e=>e.tipo==='annulla').map(e=>e.annulla_id)); const targets=E.filter(e=>e.tipo==='raccolta'&&e.gruppo===g&&!ann.has(e.id)); if(!targets.length) return;
   const ts=new Date().toISOString(); const evs=targets.map(t=>({id:uuid(),ts,device:S.device,tipo:'annulla',annulla_id:t.id,gruppo:g}));
@@ -435,6 +445,7 @@ document.body.addEventListener('click',async e=>{ const b=e.target.closest('[dat
     case 'filtro': filtro=v; render(); break;
     case 'toggle-ann': mostraAnn=!mostraAnn; render(); break;
     case 'vista-quota': vistaQuota=v; render(); break;
+    case 'modifica-gruppo': { if(F.righe.length&&!window.confirm('Hai una raccolta in corso non salvata: la scarto?')) break; const f=formDaGruppo(v); if(!f){ toast('Raccolta non trovata'); break; } F=f; vista='nuova'; render(); window.scrollTo(0,0); break; }
     case 'annulla-gruppo': if(window.confirm('Annullare questa raccolta? Resta nello storico come annullata.')) await annullaGruppo(v); break;
     case 'densita': S.densita=v; await salvaImp(); render(); break;
     case 'imp-fattore': Pad.open('1 coffa = ? kg',S.fattore_coffa,async n=>{ if(n&&n>0){ S.fattore_coffa=n; await salvaImp(); render(); } else toast('Serve un numero maggiore di 0'); },{dec:1}); break;
