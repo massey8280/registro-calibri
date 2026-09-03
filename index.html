@@ -34,9 +34,20 @@ button.salva{background:var(--salva);border-color:var(--salva);color:#fff;font-w
 button.ghost{border-color:transparent;background:transparent;color:var(--boa);font-weight:700;padding:0 8px}
 button.danger{color:var(--avviso)}
 button.mini{min-height:32px;padding:0 10px;font-size:14px;border-radius:16px}
-.wrap{padding:10px 12px 0;max-width:640px;margin:0 auto}
-header.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px 8px;position:sticky;top:0;background:var(--paper);z-index:5}
-header.top::after{content:'';position:absolute;left:0;right:0;bottom:-6px;height:8px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='8' viewBox='0 0 24 8'%3E%3Cpath d='M0 4c3-4 6-4 9 0s6 4 9 0 6-4 9 0' fill='none' stroke='%230B2A3B' stroke-width='1.6'/%3E%3C/svg%3E") repeat-x}
+.wrap{padding:6px 12px 0;max-width:640px;margin:0 auto}
+.lista{background:#fff;border:1px solid var(--ink);border-radius:var(--r);overflow:hidden}
+.lista .it{display:flex;align-items:center;gap:8px;min-height:var(--tap);padding:0 4px 0 12px;border-bottom:1px solid var(--acqua2)}
+.lista .it:last-child{border-bottom:0}
+.lista .it .nome{flex:1;font-weight:700}
+.lista .it .quota{color:var(--muted);font-size:14px;font-weight:600}
+.lista .it button.x{border:0;background:transparent;color:var(--avviso);min-height:40px;min-width:40px;padding:0;font-size:18px}
+.lista .it button.nome{border:0;background:transparent;text-align:left;padding:0;flex:1;font-weight:700;min-height:40px}
+.card{background:#fff;border:1px solid var(--ink);border-radius:var(--r);padding:10px 12px;box-shadow:4px 4px 0 var(--acqua2)}
+.card .kv{display:flex;justify-content:space-between;gap:10px;padding:4px 0;font-size:15px}
+.card .kv span:first-child{color:var(--muted)}
+.card .kv b{font-variant-numeric:tabular-nums}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px 14px;position:sticky;top:0;background:var(--paper);z-index:5}
+header.top::after{content:'';position:absolute;left:0;right:0;bottom:0;height:8px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='8' viewBox='0 0 24 8'%3E%3Cpath d='M0 4c3-4 6-4 9 0s6 4 9 0 6-4 9 0' fill='none' stroke='%230B2A3B' stroke-width='1.6'/%3E%3C/svg%3E") repeat-x}
 .badge{font-size:13px;color:var(--muted);white-space:nowrap;font-weight:600}
 .view{display:none}.view.on{display:block}
 .row{display:flex;gap:6px;flex-wrap:wrap}
@@ -139,7 +150,7 @@ table.gen .nos{background:var(--acqua);font-weight:800}
 
 <script>
 'use strict';
-const VERSION='0.5.0';
+const VERSION='0.5.1';
 const CALIBRI=['grossa','mezzana','semina','mista'];
 const NOME={grossa:'Grossa',mezzana:'Mezzana',semina:'Semina',mista:'Mista'};
 const DEST_DEFAULT={grossa:'venduta',mezzana:'riseminata',semina:'riseminata',mista:'riseminata'};
@@ -364,27 +375,28 @@ function renderRegistro(){ const el=document.getElementById('v-registro'); const
     return '<div class="grp'+(tuttiAnn?' ann':'')+'"><div class="t" style="font-size:15px">'+giornoSett(e0.data)+' '+fmtData(e0.data)+' <span class="s">· da '+esc(e0.origine_vivaio||'?')+(e0.quota_pct!==100?' · quota '+fmt(e0.quota_pct,1)+' %':'')+'</span></div>'+righe
     +(tuttiAnn?'<div class="s" style="margin-top:4px">annullata</div>':'<div class="right" style="gap:6px">'+(e0.sostituisce_gruppo?'<span class="s" style="align-self:center;margin-right:auto">modificata</span>':'')+'<button class="ghost mini" data-a="modifica-gruppo" data-v="'+e0.gruppo+'">Modifica</button><button class="ghost danger mini" data-a="annulla-gruppo" data-v="'+e0.gruppo+'">Annulla</button></div>')+'</div>'; }).join(''); }
 
-function renderImpostazioni(){ const el=document.getElementById('v-impostazioni');
-  const vivChips='<div class="chips">'+S.vivai.map(v=>btn(esc(v.nome)+(v.quota_pct!==100?' · '+fmt(v.quota_pct,1)+' %':''),'imp-vivaio-quota',{v:v.nome})+btn('✕','imp-vivaio-del',{v:v.nome},'mini danger')).join('')+btn('+ nuovo','imp-vivaio-add',{},'ghost')+'</div>';
-  const compChips='<div class="chips">'+S.compratori.map(v=>btn(esc(v),'noop',{})+btn('✕','imp-comp-del',{v},'mini danger')).join('')+btn('+ nuovo','imp-comp-add',{},'ghost')+'</div>';
-  el.innerHTML='<div class="warn">Versione di prova: i dati stanno solo su questo telefono, nessuna sincronizzazione. Esporta il JSON ogni giorno di uso.</div>'
-  +'<h2>Dati</h2>'
-  +'<div class="field"><span class="lab">Eventi registrati</span><span class="val">'+eventiAttivi(E).length+'</span></div>'
-  +'<div class="field"><span class="lab">Storage protetto dal browser</span><span class="val">'+(persisted===true?'sì':persisted===false?'no':'?')+'</span></div>'
-  +'<div class="row" style="margin-top:8px"><button class="primary" data-a="esporta">Esporta JSON</button><button data-a="importa">Importa JSON</button></div>'
-  +'<input type="file" id="f-import" accept="application/json,.json" style="display:none">'
-  +'<h2>Server</h2>'+(syncCfg().token
-    ?'<div class="field"><span class="lab">Stato</span><span class="val" style="font-size:15px">'+esc(syncStato||'collegato')+'</span></div><div class="field"><span class="lab">Ultima sync</span><span class="val" style="font-size:15px">'+(syncCfg().ultima?fmtData(syncCfg().ultima.slice(0,10))+' '+syncCfg().ultima.slice(11,16)+' UTC':'mai')+'</span></div><div class="field"><span class="lab">Da inviare</span><span class="val">'+syncCfg().pendenti.length+'</span></div><div class="row" style="margin-top:8px"><button class="primary" data-a="sync-ora">Sincronizza ora</button><button data-a="sync-scollega" class="danger">Scollega</button></div>'
-    :'<div class="s">Incolla il token del server e collega: da lì ogni raccolta viene copiata sul VPS appena c\'è rete.</div><input type="text" id="f-token" placeholder="token" autocomplete="off" autocapitalize="off" spellcheck="false" style="margin-top:6px"><div class="row" style="margin-top:8px"><button class="primary" data-a="sync-collega">Collega</button></div>')
+function listaVivai(){ if(!S.vivai.length) return '<div class="empty" style="padding:8px 0">Nessun vivaio. Aggiungine uno.</div>';
+  return '<div class="lista">'+S.vivai.map(v=>'<div class="it"><button class="nome" data-a="imp-vivaio-quota" data-v="'+esc(v.nome)+'">'+esc(v.nome)+'</button><span class="quota">quota '+fmt(v.quota_pct,1)+' %</span><button class="x" data-a="imp-vivaio-del" data-v="'+esc(v.nome)+'" aria-label="togli">✕</button></div>').join('')+'</div>'; }
+function listaComp(){ if(!S.compratori.length) return '<div class="empty" style="padding:8px 0">Nessun compratore.</div>';
+  return '<div class="lista">'+S.compratori.map(v=>'<div class="it"><span class="nome">'+esc(v)+'</span><button class="x" data-a="imp-comp-del" data-v="'+esc(v)+'" aria-label="togli">✕</button></div>').join('')+'</div>'; }
+function renderImpostazioni(){ const el=document.getElementById('v-impostazioni'); const c=syncCfg();
+  const server=c.token
+    ?'<div class="card"><div class="kv"><span>Stato</span><b>'+esc(syncStato||'collegato')+'</b></div><div class="kv"><span>Ultima sync</span><b>'+(c.ultima?fmtData(c.ultima.slice(0,10))+' '+c.ultima.slice(11,16)+' UTC':'mai')+'</b></div><div class="kv"><span>Da inviare</span><b>'+c.pendenti.length+'</b></div><div class="row" style="margin-top:8px"><button class="primary" data-a="sync-ora">Sincronizza ora</button><button class="danger" data-a="sync-scollega" style="flex:0 0 auto">Scollega</button></div></div>'
+    :'<div class="card"><div class="s">Incolla il token del server e collega: da lì ogni raccolta viene copiata sul VPS appena c\'è rete.</div><input type="text" id="f-token" placeholder="token" autocomplete="off" autocapitalize="off" spellcheck="false" style="margin-top:8px"><div class="row" style="margin-top:8px"><button class="primary" data-a="sync-collega">Collega</button></div></div>';
+  el.innerHTML='<h2>Server</h2>'+server
+  +'<h2>Vivai <span class="s">· tocca il nome per la quota nostra</span></h2>'+listaVivai()+'<div class="right" style="margin-top:4px"><button class="ghost mini" data-a="imp-vivaio-add">+ vivaio</button></div>'
+  +'<h2>Compratori</h2>'+listaComp()+'<div class="right" style="margin-top:4px"><button class="ghost mini" data-a="imp-comp-add">+ compratore</button></div>'
+  +'<h2>Conversioni</h2>'+fieldBtn('1 coffa =',fmt(S.fattore_coffa,1)+' kg','imp-fattore')+fieldBtn('Tara per collo',S.tara_collo==null?'?':fmt(S.tara_collo,2)+' kg','imp-tara')
   +'<h2>Aspetto</h2><div class="chips">'+btn('Compatta','densita',{v:'compatta'},S.densita!=='barca'?'on':'')+btn('Barca: tutto più grande','densita',{v:'barca'},S.densita==='barca'?'on':'')+'</div>'
-  +'<h2>Vivai <span class="s">(tocca per la quota nostra abituale)</span></h2>'+vivChips
-  +'<h2>Compratori</h2>'+compChips
-  +'<h2>Conversioni</h2>'
-  +fieldBtn('1 coffa =',fmt(S.fattore_coffa,1)+' kg','imp-fattore')
-  +fieldBtn('Tara per collo',S.tara_collo==null?'?':fmt(S.tara_collo,2)+' kg','imp-tara')
-  +'<h2>Nome di questo dispositivo</h2><input type="text" id="f-device" value="'+esc(S.device)+'" placeholder="es. telefono">'
+  +'<h2>Dati</h2><div class="row"><button data-a="esporta">Esporta JSON</button><button data-a="importa">Importa JSON</button>'+(c.token?'<button data-a="csv">CSV per il commercialista</button>':'')+'</div>'
+  +'<input type="file" id="f-import" accept="application/json,.json" style="display:none">'
+  +'<div class="s" style="margin-top:6px">'+eventiAttivi(E).length+' eventi attivi sul telefono · storage protetto: '+(persisted===true?'sì':persisted===false?'no':'?')+(c.token?'':' · <b>senza server: esporta a fine giornata</b>')+'</div>'
+  +'<h2>Questo dispositivo</h2><input type="text" id="f-device" value="'+esc(S.device)+'" placeholder="es. telefono">'
   +'<div class="s" style="margin-top:20px">Registro calibri v'+VERSION+'</div>'; }
-
+async function scaricaCsv(){ const c=syncCfg(); try{ const r=await fetch('./api/export.csv',{headers:{'Authorization':'Bearer '+c.token}}); if(!r.ok) throw new Error('server '+r.status); const blob=await r.blob(); const name='registro-calibri-'+oggiISO().replace(/-/g,'')+'.csv';
+    if(navigator.canShare&&typeof File!=='undefined'){ const file=new File([blob],name,{type:'text/csv'}); if(navigator.canShare({files:[file]})){ try{ await navigator.share({files:[file],title:name}); return; }catch(e){ if(e&&e.name==='AbortError') return; } } }
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove(); toast('Scaricato '+name); }
+  catch(e){ toast('CSV non scaricato: '+(e&&e.message?e.message:e)); } }
 function renderBar(){ const bar=document.getElementById('bar'); if(vista!=='nuova'){ bar.style.display='none'; document.body.classList.remove('has-bar'); return; }
   bar.style.display='flex'; document.body.classList.add('has-bar');
   bar.innerHTML=F.passo===1
@@ -479,6 +491,7 @@ document.body.addEventListener('click',async e=>{ const b=e.target.closest('[dat
     case 'vista-quota': vistaQuota=v; render(); break;
     case 'sync-collega': { const t=(document.getElementById('f-token').value||'').trim(); if(!t){ toast('Token vuoto'); break; } const c=syncCfg(); c.token=t; c.lastSeq=0; c.pendenti=E.map(e=>e.id); await salvaImp(); await sync(); render(); break; }
     case 'sync-ora': await sync(); render(); break;
+    case 'csv': await scaricaCsv(); break;
     case 'sync-scollega': if(window.confirm('Scollegare il server? I dati restano sul telefono e sul server.')){ const c=syncCfg(); c.token=''; syncStato=''; await salvaImp(); render(); } break;
     case 'modifica-gruppo': { if(F.righe.length&&!window.confirm('Hai una raccolta in corso non salvata: la scarto?')) break; const f=formDaGruppo(v); if(!f){ toast('Raccolta non trovata'); break; } F=f; vista='nuova'; render(); window.scrollTo(0,0); break; }
     case 'annulla-gruppo': if(window.confirm('Annullare questa raccolta? Resta nello storico come annullata.')) await annullaGruppo(v); break;
