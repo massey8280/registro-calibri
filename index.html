@@ -200,9 +200,11 @@ table.gen th.nos{color:var(--accent)}
 
 <script>
 'use strict';
-const VERSION='0.10.1';
+const VERSION='0.10.2';
 const CALIBRI=['grossa','mezzana','semina','mista'];
 const NOME={grossa:'Grossa',mezzana:'Mezzana',semina:'Semina',mista:'Mista'};
+const ORD={grossa:0,mezzana:1,semina:2,mista:3};
+function ordinaRighe(righe){ return righe.sort((a,b)=>(ORD[a.calibro]==null?9:ORD[a.calibro])-(ORD[b.calibro]==null?9:ORD[b.calibro])); }
 const DEST_DEFAULT={grossa:'venduta',mezzana:'riseminata',semina:'riseminata',mista:'riseminata'};
 const TAB={nuova:'v-nuova',totali:'v-totali',registro:'v-registro',impostazioni:'v-impostazioni'};
 
@@ -225,7 +227,7 @@ function unitaRiga(r){ return r.unita==='coffe'?'coffe':'kg'; }
 function portionsWithResto(r,q){ const ps=r.dest; let used=0; return ps.map((p,i)=>{ if(i<ps.length-1){ used+=p.qta||0; return Object.assign({},p,{qta:p.qta||0}); } return Object.assign({},p,{qta:round2((q||0)-used)}); }); }
 
 function buildEventi(F,S){ const ts=new Date().toISOString(); const gruppo=uuid(); const out=[];
-  F.righe.forEach(r=>{ const q=qtaRiga(r); const ps=portionsWithResto(r,q);
+  ordinaRighe(F.righe.slice()).forEach(r=>{ const q=qtaRiga(r); const ps=portionsWithResto(r,q);
     ps.forEach(p=>{ out.push({
       id:uuid(), gruppo, ts, device:S.device, tipo:'raccolta', data:F.data,
       origine_vivaio:F.origine, origine_punto:null, quota_pct:F.quota,
@@ -341,7 +343,7 @@ function ultimoEv(calibro){ let best=null; for(const e of E){ if(e.tipo==='racco
 function portDefault(c,u){ const p=nuovaPort(DEST_DEFAULT[c]); if(u){ if(u.dest) p.dest=u.dest; if(u.dest_vivaio&&u.dest_vivaio!=='?') p.vivaio=u.dest_vivaio; if(u.compratore&&u.compratore!=='?') p.compratore=u.compratore; if(u.prezzo_kg!=null) p.prezzo=u.prezzo_kg; } return p; }
 function nuovaRigaCal(c){ const r=nuovaRiga(); r.calibro=c; const u=ultimoEv(c); r.unita=u?(u.lordo_kg!=null?'lordo':u.unita):(c==='grossa'?'kg':'coffe'); if(r.unita==='lordo') r.tara=S.tara_collo; r.dest=[portDefault(c,u)]; return r; }
 function nuovoForm(){ let last=null; for(const e of E){ if(e.tipo==='raccolta'&&(!last||String(e.ts)>String(last.ts))) last=e; } const o=last&&last.origine_vivaio?last.origine_vivaio:'?'; return {data:oggiISO(),origine:o,quota:quotaVivaio(S,o),righe:[],testo:'',daTesto:true,note:[]}; }
-function applicaTesto(){ const base=nuovoForm(); const r=interpreta(F.testo,S,oggiISO()); F.data=r.data||base.data; F.origine=r.origine||base.origine; F.quota=r.quota!=null?r.quota:(r.origine?quotaVivaio(S,r.origine):base.quota); F.righe=r.righe; F.righe.forEach(x=>{ x.chiusa=!!x.calibro&&qtaRiga(x)!=null; }); F.note=r.note; F.daTesto=true; }
+function applicaTesto(){ const base=nuovoForm(); const r=interpreta(F.testo,S,oggiISO()); F.data=r.data||base.data; F.origine=r.origine||base.origine; F.quota=r.quota!=null?r.quota:(r.origine?quotaVivaio(S,r.origine):base.quota); F.righe=ordinaRighe(r.righe); F.righe.forEach(x=>{ x.chiusa=!!x.calibro&&qtaRiga(x)!=null; }); F.note=r.note; F.daTesto=true; }
 let F=nuovoForm();
 function formDaGruppo(g){ const ann=new Set(E.filter(e=>e.tipo==='annulla').map(e=>e.annulla_id)); const evs=E.filter(e=>e.tipo==='raccolta'&&e.gruppo===g&&!ann.has(e.id)); if(!evs.length) return null;
   const e0=evs[0]; const F2={data:e0.data,origine:e0.origine_vivaio||'?',quota:e0.quota_pct==null?100:e0.quota_pct,righe:[],sostituisce_gruppo:g};
@@ -349,7 +351,7 @@ function formDaGruppo(g){ const ann=new Set(E.filter(e=>e.tipo==='annulla').map(
   evs.forEach(e=>{ let r=map[key(e)]; if(!r){ r=nuovaRiga(); r.calibro=e.calibro; r.split=e.split_mezzana_pct; if(e.lordo_kg!=null){ r.unita='lordo'; r.lordo=e.lordo_kg; r.colli=e.colli; r.tara=e.tara_collo; } else { r.unita=e.unita; r.qta=0; } map[key(e)]=r; F2.righe.push(r); }
     if(r.unita!=='lordo') r.qta=round2((r.qta||0)+e.qta);
     r.dest.push({dest:e.dest,qta:e.qta,vivaio:e.dest_vivaio||'?',compratore:e.compratore||'?',prezzo:e.prezzo_kg,incassata:!!e.incassata_il}); });
-  F2.righe.forEach(x=>{ x.chiusa=true; }); return F2; }
+  F2.righe.forEach(x=>{ x.chiusa=true; }); ordinaRighe(F2.righe); return F2; }
 function bannerModifica(){ if(!F.sostituisce_gruppo) return ''; return '<div class="warn">Stai modificando la raccolta del '+fmtData(F.data)+'. Salvando, la versione precedente viene annullata e resta nello storico. '+btn('Lascia stare','svuota',{},'ghost mini')+'</div>'; }
 async function salvaImp(){ await DB.setKv('impostazioni',S); }
 // ----- sync con il server: push della outbox (pendenti), poi pull incrementale per seq -----
@@ -507,7 +509,7 @@ function renderRegistro(){ const el=document.getElementById('v-registro'); const
   const gruppi=mostraAnn?tutti:tutti.filter(g=>!g.every(e=>ann.has(e.id)));
   const testa=nAnn?'<div class="chips" style="margin-bottom:4px">'+btn(mostraAnn?'Nascondi annullate':'Mostra annullate ('+nAnn+')','toggle-ann',{},mostraAnn?'on':'')+'</div>':'';
   el.innerHTML=testa+gruppi.map(g=>{ const e0=g[0]; const tuttiAnn=g.every(e=>ann.has(e.id));
-    const righe=g.map(e=>{ const a=ann.has(e.id); let d='';
+    const righe=g.slice().sort((a,b)=>(ORD[a.calibro]==null?9:ORD[a.calibro])-(ORD[b.calibro]==null?9:ORD[b.calibro])).map(e=>{ const a=ann.has(e.id); let d='';
       if(e.dest==='venduta') d='venduta a '+esc(e.compratore||'?')+(e.prezzo_kg!=null?' · '+fmt(e.prezzo_kg,2)+' €/kg':' · prezzo ?')+(e.incassata_il?' · incassata':'');
       else if(e.dest==='riseminata') d='riseminata in '+esc(e.dest_vivaio||'?'); else d='da assegnare';
       const m=e.calibro==='mista'?(e.split_mezzana_pct!=null?' (≈'+fmt(e.split_mezzana_pct,0)+' % mezz.)':' (split ?)'):'';
@@ -610,9 +612,9 @@ document.body.addEventListener('click',async e=>{ const b=e.target.closest('[dat
     case 'nuovo-vivaio-orig': { const n=await nuovoNome('Nome del vivaio','vivai'); if(n){ F.origine=n; F.quota=quotaVivaio(S,n); } render(); break; }
     case 'set-quota': if(v==='altro') Pad.open('Quota nostra (%)',[100,50].includes(F.quota)?null:F.quota,n=>{ if(n!=null&&n>0&&n<=100){ F.quota=n; render(); } else toast('Quota fra 1 e 100'); },{dec:1}); else { F.quota=+v; render(); } break;
     case 'set-data': F.data=v; render(); break;
-    case 'add-riga': F.righe.push(nuovaRigaCal(v)); render(); break;
+    case 'add-riga': F.righe.push(nuovaRigaCal(v)); ordinaRighe(F.righe); render(); break;
     case 'riga-cambia': R.cambia=!R.cambia; render(); break;
-    case 'riga-cal': { if(R.calibro!==v){ const u=ultimoEv(v); R.calibro=v; R.split=null; R.dest=[portDefault(v,u)]; } R.cambia=false; render(); break; }
+    case 'riga-cal': { if(R.calibro!==v){ const u=ultimoEv(v); R.calibro=v; R.split=null; R.dest=[portDefault(v,u)]; } R.cambia=false; ordinaRighe(F.righe); render(); break; }
     case 'p-apri': R.apri=true; render(); break;
     case 'riga-apri': R.chiusa=false; render(); break;
     case 'riga-chiudi': R.chiusa=true; R.apri=false; render(); break;
