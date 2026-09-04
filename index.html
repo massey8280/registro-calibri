@@ -88,7 +88,7 @@ nav.tabs{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--pa
 nav.tabs>button{flex:1;border:0;border-radius:0;background:transparent;color:var(--muted);min-height:56px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono)}
 nav.tabs>button.on{color:var(--accent);background:transparent;box-shadow:inset 0 2px 0 var(--accent)}
 table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
-td,th{padding:9px 4px;text-align:right;border-bottom:1px solid var(--line);font-size:14px;vertical-align:top;line-height:1.3}
+td,th{padding:9px 3px;text-align:right;border-bottom:1px solid var(--line);font-size:13px;vertical-align:top;line-height:1.3;white-space:nowrap}
 td{font-family:var(--mono)}
 td:first-child{font-family:'Inter',system-ui,sans-serif}
 th{color:var(--muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;font-family:var(--mono)}
@@ -175,7 +175,7 @@ table.gen th.nos{color:var(--accent)}
 
 <script>
 'use strict';
-const VERSION='0.8.0';
+const VERSION='0.8.1';
 const CALIBRI=['grossa','mezzana','semina','mista'];
 const NOME={grossa:'Grossa',mezzana:'Mezzana',semina:'Semina',mista:'Mista'};
 const DEST_DEFAULT={grossa:'venduta',mezzana:'riseminata',semina:'riseminata',mista:'riseminata'};
@@ -214,29 +214,30 @@ function buildEventi(F,S){ const ts=new Date().toISOString(); const gruppo=uuid(
   return out; }
 
 function eventiAttivi(E){ const ann=new Set(E.filter(e=>e.tipo==='annulla').map(e=>e.annulla_id)); return E.filter(e=>e.tipo==='raccolta'&&!ann.has(e.id)); }
-function inPeriodo(e,filtro,oggi){ if(filtro==='tutto') return true; if(filtro==='mese') return e.data.slice(0,7)===oggi.slice(0,7); if(filtro==='30'){ const t=new Date(oggi+'T12:00:00'); t.setDate(t.getDate()-30); return e.data>=isoLocal(t); } return true; }
+function inPeriodo(e,filtro,oggi){ if(filtro==='tutto') return true; if(filtro==='mese') return e.data.slice(0,7)===oggi.slice(0,7); if(filtro==='anno') return e.data.slice(0,4)===oggi.slice(0,4); if(filtro==='30'){ const t=new Date(oggi+'T12:00:00'); t.setDate(t.getDate()-30); return e.data>=isoLocal(t); } return true; }
 function kgEvento(e,S,quota){ const f=e.fattore_coffa!=null?e.fattore_coffa:(S.fattore_coffa||25); const base=e.unita==='coffe'?e.qta*f:e.qta; const q=quota?((e.quota_pct==null?100:e.quota_pct)/100):1; return {kg:base*q, stim:e.unita==='coffe'}; }
 function m0(){ return {c:0,s:0}; }
 function vuotoT(){ return {raccolto:m0(),venduto:m0(),euro:{c:0,s:0,senza:0},riseminato:m0(),da_assegnare:m0()}; }
 // quota=true → quota nostra; quota=false → totale raccolto
 function computeTotali(E,S,filtro,oggi,quota){
-  const T={}; CALIBRI.forEach(c=>T[c]=vuotoT()); const V={}; const C={}; const O={}; let n=0; let haQuota=false;
+  const T={}; CALIBRI.forEach(c=>T[c]=vuotoT()); const V={}; const C={}; const O={}; const M={}; let n=0; let haQuota=false;
   for(const e of eventiAttivi(E)){ if(!inPeriodo(e,filtro,oggi)) continue; n++; if(e.quota_pct!=null&&e.quota_pct!==100) haQuota=true;
     const {kg,stim}=kgEvento(e,S,quota); let parts;
     if(e.calibro==='mista'&&e.split_mezzana_pct!=null) parts=[['mezzana',kg*e.split_mezzana_pct/100,true],['semina',kg*(100-e.split_mezzana_pct)/100,true]];
     else parts=[[e.calibro,kg,stim]];
     const og=e.origine_vivaio||'?'; const o=O[og]||(O[og]={grossa:m0(),mezzana:m0(),semina:m0(),mista:m0(),euro:{c:0,s:0},n:0,ultima:null,quota:false});
     o.n++; if(!o.ultima||e.data>o.ultima) o.ultima=e.data; if(e.quota_pct!=null&&e.quota_pct!==100) o.quota=true;
+    const mk=(e.data||'').slice(0,7); const mm=M[mk]||(M[mk]={raccolto:m0(),euro:{c:0,s:0},incassato:0,n:0}); mm.n++;
     parts.forEach(([cal,k,st],idx)=>{ const t=T[cal]||(T[cal]=vuotoT()); const key=st?'s':'c';
-      t.raccolto[key]+=k; o[cal][key]+=k;
+      t.raccolto[key]+=k; o[cal][key]+=k; mm.raccolto[key]+=k;
       if(e.dest==='venduta'){ t.venduto[key]+=k; const cp=e.compratore||'?'; const c=C[cp]||(C[cp]={kg:0,euro:0,stim:false,senza:0,incassato:0,n:0});
         c.kg+=k; if(st) c.stim=true; if(idx===0) c.n++;
-        if(e.prezzo_kg!=null){ t.euro[key]+=k*e.prezzo_kg; o.euro[key]+=k*e.prezzo_kg; c.euro+=k*e.prezzo_kg; if(e.incassata_il) c.incassato+=k*e.prezzo_kg; } else { t.euro.senza+=k; c.senza+=k; } }
+        if(e.prezzo_kg!=null){ t.euro[key]+=k*e.prezzo_kg; o.euro[key]+=k*e.prezzo_kg; mm.euro[key]+=k*e.prezzo_kg; c.euro+=k*e.prezzo_kg; if(e.incassata_il){ c.incassato+=k*e.prezzo_kg; mm.incassato+=k*e.prezzo_kg; } } else { t.euro.senza+=k; c.senza+=k; } }
       else if(e.dest==='riseminata'){ t.riseminato[key]+=k; const vv=e.dest_vivaio||'?'; const v=V[vv]||(V[vv]={grossa:0,mezzana:0,semina:0,mista:0,stim:false,n:0,ultima:null});
         v[cal]+=k; if(st) v.stim=true; if(idx===0) v.n++; if(!v.ultima||e.data>v.ultima) v.ultima=e.data; }
       else t.da_assegnare[key]+=k; });
   }
-  return {T,V,C,O,n,haQuota}; }
+  return {T,V,C,O,M,n,haQuota}; }
 // ---- interprete del testo libero: "codigoro: 200 kg grossa finittica 11 incassato, 14 coffe mezzana bassamarea" ----
 function normTxt(t){ return String(t||'').toLowerCase().replace(/€\/?kg/g,' € ').replace(/[’']/g,' ').replace(/\s+/g,' ').trim(); }
 function trovaNome(tok,lista){ tok=tok.replace(/[^a-z0-9]/g,''); if(tok.length<3) return null; for(const nome of lista){ const nn=String(nome).toLowerCase().replace(/[^a-z0-9]/g,''); if(nn===tok||(tok.length>=4&&nn.startsWith(tok))||(nn.length>=4&&tok.startsWith(nn))) return nome; } return null; }
@@ -308,7 +309,7 @@ const DB={ db:null,
 
 // ----- stato -----
 let S={device:'',fattore_coffa:25,tara_collo:null,vivai:[],compratori:[],densita:'compatta'};
-let E=[]; let vista='nuova'; let filtro='mese'; let persisted=null; let mostraAnn=false; let vistaQuota='nostra';
+let E=[]; let vista='nuova'; let filtro='tutto'; let persisted=null; let mostraAnn=false; let vistaQuota='nostra';
 function nuovaRiga(){ return {calibro:null,qta:null,unita:'kg',split:null,lordo:null,colli:null,tara:null,dest:[]}; }
 function nuovaPort(dest){ return {dest,qta:null,vivaio:'?',compratore:'?',prezzo:null,incassata:false}; }
 function ultimoEv(calibro){ let best=null; for(const e of E){ if(e.tipo==='raccolta'&&e.calibro===calibro&&(!best||String(e.ts)>String(best.ts))) best=e; } return best; }
@@ -414,7 +415,7 @@ function sommaT(T){ const g=vuotoT(); g.incassato=0; CALIBRI.forEach(c=>{ const 
 
 function renderTotali(){ const el=document.getElementById('v-totali'); const oggi=oggiISO();
   const tot=computeTotali(E,S,filtro,oggi,false); const nos=computeTotali(E,S,filtro,oggi,true);
-  const fchips='<div class="chips">'+[['mese','Mese'],['30','30 giorni'],['tutto','Tutto']].map(([v,l])=>btn(l,'filtro',{v},filtro===v?'on':'')).join('')+'</div>';
+  const fchips='<div class="chips">'+[['mese','Mese'],['anno','Anno'],['tutto','Tutto']].map(([v,l])=>btn(l,'filtro',{v},filtro===v?'on':'')).join('')+'</div>';
   if(!tot.n){ el.innerHTML=fchips+'<div class="empty">Nessuna raccolta nel periodo.</div>'; return; }
   const gT=sommaT(tot.T), gN=sommaT(nos.T);
   const incT=Object.values(tot.C).reduce((a,c)=>a+c.incassato,0), incN=Object.values(nos.C).reduce((a,c)=>a+c.incassato,0);
@@ -429,15 +430,19 @@ function renderTotali(){ const el=document.getElementById('v-totali'); const ogg
   const sw='<div class="chips" style="margin-top:14px"><span class="s">Dettaglio:</span>'+btn('Totale','vista-quota',{v:'totale'},vistaQuota==='totale'?'on':'')+btn('Nostra','vista-quota',{v:'nostra'},vistaQuota==='nostra'?'on':'')+'</div>';
   const cal=CALIBRI.filter(c=>R.T[c].raccolto.c||R.T[c].raccolto.s).map(c=>{ const t=R.T[c];
     return '<tr><td class="'+c+'">'+NOME[c]+'</td><td>'+numK(t.raccolto)+'</td><td>'+numK(t.venduto)+(t.euro.c||t.euro.s?'<span class="ns">'+numE(t.euro)+'</span>':'')+'</td><td>'+numK(t.riseminato)+'</td><td>'+numK(t.da_assegnare)+'</td></tr>'; }).join('');
+  const gR=sommaT(R.T); const totRow='<tr><td><b>Totale</b></td><td><b>'+numK(gR.raccolto)+'</b></td><td><b>'+numK(gR.venduto)+'</b>'+(gR.euro.c||gR.euro.s?'<span class="ns">'+numE(gR.euro)+'</span>':'')+'</td><td><b>'+numK(gR.riseminato)+'</b></td><td><b>'+numK(gR.da_assegnare)+'</b></td></tr>';
+  const MESI=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+  const mesi=Object.keys(R.M).sort().reverse().map(k=>{ const m=R.M[k]; const eu=m.euro.c+m.euro.s; return '<tr><td>'+MESI[+k.slice(5,7)-1]+' '+k.slice(0,4)+'</td><td>'+numK(m.raccolto)+'</td><td>'+(eu?numE(m.euro):'—')+'</td><td>'+(m.incassato?fmtEuro(m.incassato):'—')+(eu-m.incassato>0.005?'<span class="ns stim">'+fmtEuro(eu-m.incassato)+' aperti</span>':'')+'</td><td>'+m.n+'</td></tr>'; }).join('');
   const colsO=CALIBRI.filter(c=>Object.values(R.O).some(o=>o[c].c||o[c].s));
   const orig=Object.keys(R.O).sort().map(k=>{ const o=R.O[k]; return '<tr><td>'+esc(k)+'</td>'+colsO.map(c=>'<td>'+((o[c].c||o[c].s)?numK(o[c]):'—')+'</td>').join('')+'<td>'+((o.euro.c||o.euro.s)?numE(o.euro):'—')+'</td><td>'+o.n+'</td></tr>'; }).join('');
   const colsV=CALIBRI.filter(c=>Object.values(R.V).some(v=>v[c]));
   const viv=Object.keys(R.V).sort().map(k=>{ const v=R.V[k]; return '<tr><td>'+esc(k)+'</td>'+colsV.map(c=>'<td>'+(v[c]?(v.stim?'<span class="stim">≈</span>':'')+fmt(v[c],0):'—')+'</td>').join('')+'<td>'+fmtData(v.ultima).slice(0,5)+'</td></tr>'; }).join('');
-  const comp=Object.keys(R.C).sort().map(k=>{ const c=R.C[k]; return '<tr><td>'+esc(k)+'</td><td>'+(c.stim?'<span class="stim">≈</span>':'')+fmt(c.kg,0)+'</td><td>'+fmtEuro(c.euro)+(c.senza?'<span class="ns stim">'+fmt(c.senza,0)+' kg s/prezzo</span>':'')+'</td><td>'+fmtEuro(c.incassato)+'</td></tr>'; }).join('');
+  const comp=Object.keys(R.C).sort().map(k=>{ const c=R.C[k]; const kgp=c.kg-c.senza; const medio=kgp>0&&c.euro?c.euro/kgp:null; return '<tr><td>'+esc(k)+'</td><td>'+(c.stim?'<span class="stim">≈</span>':'')+fmt(c.kg,0)+'</td><td>'+fmtEuro(c.euro)+(medio!=null?'<span class="ns">'+fmt(medio,2)+' €/kg</span>':'')+(c.senza?'<span class="ns stim">'+fmt(c.senza,0)+' kg s/prezzo</span>':'')+'</td><td>'+fmtEuro(c.incassato)+(c.euro-c.incassato>0.005?'<span class="ns stim">'+fmtEuro(c.euro-c.incassato)+' aperti</span>':'')+'</td></tr>'; }).join('');
   const th=c=>'<th>'+{grossa:'Grossa',mezzana:'Mezz.',semina:'Sem.',mista:'Mista'}[c]+'</th>';
   el.innerHTML=fchips+'<div class="s" style="margin-top:6px">≈ = contiene stime (coffe a '+fmt(S.fattore_coffa,1)+' kg, split mista, prezzo mancante). Nostra = dopo la quota (es. 50 % a codigoro).</div>'
   +generale+sw
-  +'<h2>Per calibro (kg)</h2><table><tr><th></th><th>Raccolto</th><th>Venduto</th><th>Risem.</th><th>Da ass.</th></tr>'+cal+'</table>'
+  +'<h2>Per calibro (kg)</h2><table><tr><th></th><th>Raccolto</th><th>Venduto</th><th>Risem.</th><th>Da ass.</th></tr>'+cal+totRow+'</table>'
+  +'<h2>Per mese</h2><table><tr><th>Mese</th><th>Raccolto kg</th><th>Venduto</th><th>Incassato</th><th>N</th></tr>'+mesi+'</table>'
   +'<h2>Raccolto per vivaio d\'origine (kg)</h2><table><tr><th>Vivaio</th>'+colsO.map(th).join('')+'<th>€ vend.</th><th>N</th></tr>'+orig+'</table>'
   +'<h2>Riseminato per vivaio (kg)</h2>'+(viv?'<table><tr><th>Vivaio</th>'+colsV.map(th).join('')+'<th>Ultima</th></tr>'+viv+'</table>':'<div class="empty">Niente riseminato nel periodo.</div>')
   +'<h2>Venduto per compratore</h2>'+(comp?'<table><tr><th>Compratore</th><th>kg</th><th>Venduto</th><th>Incassato</th></tr>'+comp+'</table>':'<div class="empty">Niente venduto nel periodo.</div>'); }
@@ -573,7 +578,7 @@ document.body.addEventListener('click',async e=>{ const b=e.target.closest('[dat
     case 'p-add': R.dest.push(nuovaPort('da_assegnare')); render(); break;
     case 'p-del': R.dest.splice(j,1); render(); break;
     case 'salva': await salva(); break;
-    case 'filtro': filtro=v; render(); break;
+    case 'filtro': filtro=v; S.filtroTotali=v; await salvaImp(); render(); break;
     case 'toggle-ann': mostraAnn=!mostraAnn; render(); break;
     case 'vista-quota': vistaQuota=v; render(); break;
     case 'sync-collega': { const t=(document.getElementById('f-token').value||'').trim(); if(!t){ toast('Token vuoto'); break; } const c=syncCfg(); c.token=t; c.lastSeq=0; c.pendenti=E.map(e=>e.id); await salvaImp(); await sync(); render(); break; }
@@ -603,7 +608,7 @@ document.body.addEventListener('change',async e=>{ const t=e.target;
 // ----- avvio -----
 (async function init(){
   try{ await DB.open(); }catch(e){ document.querySelector('main').innerHTML='<div class="warn">Il browser non permette di salvare (IndexedDB bloccato: navigazione privata?). Apri l\'app in una scheda normale.</div>'; return; }
-  const s=await DB.getKv('impostazioni'); if(s) S=Object.assign({},S,s);
+  const s=await DB.getKv('impostazioni'); if(s) S=Object.assign({},S,s); if(S.filtroTotali) filtro=S.filtroTotali;
   S.vivai=normVivai(S.vivai); // v0.1 salvava i vivai come stringhe
   if(!S.device){ S.device='tel-'+Math.random().toString(36).slice(2,6); }
   await salvaImp();
