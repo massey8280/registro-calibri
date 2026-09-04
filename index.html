@@ -165,7 +165,7 @@ table.gen th.nos{color:var(--accent)}
 <main class="wrap">
   <section class="view on" id="v-nuova">
     <div id="nuova-banner"></div>
-    <h2>Scrivi la raccolta</h2>
+    <h2>Scrivi qui</h2>
     <textarea id="f-testo" rows="2" placeholder="es. codigoro: 200 kg grossa finittica 11 incassato, 14 coffe mezzana bassamarea" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>
     <div id="nuova-note"></div>
     <div id="nuova-form"></div>
@@ -200,7 +200,7 @@ table.gen th.nos{color:var(--accent)}
 
 <script>
 'use strict';
-const VERSION='0.10.0';
+const VERSION='0.10.1';
 const CALIBRI=['grossa','mezzana','semina','mista'];
 const NOME={grossa:'Grossa',mezzana:'Mezzana',semina:'Semina',mista:'Mista'};
 const DEST_DEFAULT={grossa:'venduta',mezzana:'riseminata',semina:'riseminata',mista:'riseminata'};
@@ -367,7 +367,7 @@ async function sync(){ const c=syncCfg(); if(!c.token){ syncStato=''; renderBadg
     for(let giro=0; giro<20; giro++){ const r=await api('eventi/?since='+c.lastSeq); const loc=new Set(E.map(e=>e.id)); const fresh=r.eventi.filter(e=>e&&typeof e.id==='string'&&!loc.has(e.id));
       if(fresh.length){ nuovi+=await DB.addMany('eventi',fresh); E=await DB.all('eventi'); E.sort((a,b)=>String(a.ts).localeCompare(String(b.ts))); applicaConfig(); }
       c.lastSeq=r.seq; await salvaImp(); if(!r.altro) break; }
-    c.ultima=new Date().toISOString(); syncStato=c.pendenti.length?c.pendenti.length+' da inviare':'sincronizzato'; await salvaImp();
+    c.ultima=new Date().toISOString(); syncStato=c.pendenti.length?c.pendenti.length+' da inviare':'aggiornato'; await salvaImp();
     if(nuovi&&(vista!=='nuova'||!F.righe.length)) render(); else renderBadge();
   }catch(e){ syncStato='errore: '+(e&&e.message?e.message:e); renderBadge(); }
   finally{ syncInCorso=false; } }
@@ -382,6 +382,11 @@ function applicaConfig(){ const vivai=[]; const comp=[]; let fattore=25; let tar
 async function config(campi){ const ev=Object.assign({id:uuid(),ts:new Date().toISOString(),device:S.device,tipo:'config'},campi);
   try{ await DB.putMany('eventi',[ev]); E.push(ev); accoda([ev.id]); applicaConfig(); await salvaImp(); sync(); }catch(e){ toast('Non salvato: '+(e&&e.message?e.message:e)); } }
 async function migraConfigLocale(){ if(E.some(e=>e.tipo==='config')) return; const evs=[]; const ts=new Date().toISOString(); const mk=c=>Object.assign({id:uuid(),ts,device:S.device,tipo:'config'},c);
+  // niente config e niente impostazioni locali: ricavo vivai, compratori e quote dalle raccolte già salvate
+  if(!(S.vivai&&S.vivai.length)&&!(S.compratori&&S.compratori.length)){ const vq={}; const cs=new Set();
+    for(const e of eventiAttivi(E)){ const o=e.origine_vivaio; if(o&&o!=='?'){ (vq[o]||(vq[o]={})); const q=e.quota_pct==null?100:e.quota_pct; vq[o][q]=(vq[o][q]||0)+1; } const d=e.dest_vivaio; if(d&&d!=='?'&&!vq[d]) vq[d]={}; if(e.compratore&&e.compratore!=='?') cs.add(e.compratore); }
+    S.vivai=Object.keys(vq).sort().map(nome=>{ const qs=vq[nome]; let best=100,bn=-1; for(const q in qs){ if(qs[q]>bn){ bn=qs[q]; best=+q; } } return {nome,quota_pct:best}; });
+    S.compratori=[...cs].sort(); }
   normVivai(S.vivai).forEach(v=>evs.push(mk({chiave:'vivaio',nome:v.nome,quota_pct:v.quota_pct,azione:'set'})));
   (S.compratori||[]).forEach(c=>evs.push(mk({chiave:'compratore',nome:c,azione:'set'})));
   if(S.fattore_coffa&&S.fattore_coffa!==25) evs.push(mk({chiave:'fattore_coffa',valore:S.fattore_coffa}));
@@ -416,8 +421,8 @@ function formNuova(){ const std=[100,50].includes(F.quota); const qv=quotaVivaio
       +'<h2>Quota nostra'+(qv!==100?' <span class="s">(a '+esc(F.origine)+' di solito '+fmt(qv,1)+' %)</span>':'')+'</h2><div class="chips">'+['100','50'].map(q=>btn(q+' %','set-quota',{v:q},F.quota===+q?'on':'')).join('')+btn(std?'altro…':fmt(F.quota,1)+' %','set-quota',{v:'altro'},std?'':'on')+'</div>'
       +'<div class="right" style="margin-top:8px"><button class="mini" data-a="testa-chiudi">Fatto</button></div></div>'
     :'<button class="destsum" style="margin-top:0" data-a="testa-apri"><b>'+giornoSett(F.data)+' '+fmtData(F.data)+'</b> · da '+esc(F.origine)+' · quota '+fmt(F.quota,1)+' %<span class="s" style="float:right">cambia</span></button>';
-  return '<h2 style="margin-top:10px">Raccolta</h2>'+testa
-  +'<h2>Raccolto</h2>'+F.righe.map((r,i)=>rigaCard(r,i)).join('')
+  return '<h2 style="margin-top:10px">Giorno e vivaio</h2>'+testa
+  +'<h2>Calibri</h2>'+F.righe.map((r,i)=>rigaCard(r,i)).join('')
   +'<div class="cal cal2" style="margin-top:10px">'+CALIBRI.map(c=>btn('+ '+NOME[c],'add-riga',{v:c},'add '+c)).join('')+'</div>'
   +(F.righe.length?'':'<div class="s" style="margin-top:8px">Tocca un calibro per aggiungerlo. Destinazione e unità partono da come hai fatto l\'ultima volta.</div>'); }
 
@@ -674,7 +679,7 @@ document.body.addEventListener('change',async e=>{ const t=e.target;
   const hm=(location.hash||'').match(/[#&]t=([A-Za-z0-9._-]{6,})/); if(hm){ const c=syncCfg(); c.token=hm[1]; c.lastSeq=0; c.pendenti=E.map(e=>e.id); await salvaImp(); history.replaceState(null,'',location.pathname); toast('Server collegato dal link'); }
   try{ if(navigator.storage&&navigator.storage.persist) persisted=await navigator.storage.persist(); }catch(e){}
   if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
-  applicaConfig(); await migraConfigLocale(); applicaConfig();
+  await migraConfigLocale(); applicaConfig();
   F=nuovoForm(); render(); sync();
   setInterval(()=>{ if(document.visibilityState==='visible'&&navigator.onLine) sync(); },10000);
   window.addEventListener('online',()=>sync()); document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') sync(); });
