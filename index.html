@@ -181,7 +181,7 @@ table.gen th.nos{color:var(--accent)}
 
 <script>
 'use strict';
-const VERSION='0.9.0';
+const VERSION='0.9.1';
 const CALIBRI=['grossa','mezzana','semina','mista'];
 const NOME={grossa:'Grossa',mezzana:'Mezzana',semina:'Semina',mista:'Mista'};
 const DEST_DEFAULT={grossa:'venduta',mezzana:'riseminata',semina:'riseminata',mista:'riseminata'};
@@ -474,7 +474,7 @@ function renderRegistro(){ const el=document.getElementById('v-registro'); const
       const m=e.calibro==='mista'?(e.split_mezzana_pct!=null?' (≈'+fmt(e.split_mezzana_pct,0)+' % mezz.)':' (split ?)'):'';
       const lordo=e.lordo_kg!=null?' <span class="s">(lordo '+fmt(e.lordo_kg,2)+', '+fmt(e.colli,0)+' colli)</span>':'';
       return '<div class="ev '+e.calibro+(a?' ann':'')+'"><b>'+NOME[e.calibro]+'</b>'+m+' '+fmt(e.qta,2)+' '+e.unita+lordo+' → '+d+'</div>'; }).join('');
-    return '<div class="grp'+(tuttiAnn?' ann':'')+'"><div class="t" style="font-size:15px">'+giornoSett(e0.data)+' '+fmtData(e0.data)+' <span class="s">· da '+esc(e0.origine_vivaio||'?')+(e0.quota_pct!==100?' · quota '+fmt(e0.quota_pct,1)+' %':'')+'</span></div>'+righe
+    return '<div class="grp'+(tuttiAnn?' ann':'')+'"><div class="t" style="font-size:15px">'+giornoSett(e0.data)+' '+fmtData(e0.data)+' <span class="s">· da '+esc(e0.origine_vivaio||'?')+(e0.quota_pct!==100?' · quota '+fmt(e0.quota_pct,1)+' %':'')+(e0.device?' · '+esc(e0.device):'')+'</span></div>'+righe
     +(tuttiAnn?'<div class="s" style="margin-top:4px">annullata</div>':'<div class="right" style="gap:6px">'+(e0.sostituisce_gruppo?'<span class="s" style="align-self:center;margin-right:auto">modificata</span>':'')+'<button class="ghost mini" data-a="modifica-gruppo" data-v="'+e0.gruppo+'">Modifica</button><button class="ghost danger mini" data-a="annulla-gruppo" data-v="'+e0.gruppo+'">Annulla</button></div>')+'</div>'; }).join(''); }
 
 function listaVivai(){ if(!S.vivai.length) return '<div class="empty" style="padding:8px 0">Nessun vivaio. Aggiungine uno.</div>';
@@ -483,7 +483,7 @@ function listaComp(){ if(!S.compratori.length) return '<div class="empty" style=
   return '<div class="lista">'+S.compratori.map(v=>'<div class="it"><span class="nome">'+esc(v)+'</span><button class="x" data-a="imp-comp-del" data-v="'+esc(v)+'" aria-label="togli">✕</button></div>').join('')+'</div>'; }
 function renderImpostazioni(){ const el=document.getElementById('v-impostazioni'); const c=syncCfg();
   const server=c.token
-    ?'<div class="card"><div class="kv"><span>Stato</span><b>'+esc(syncStato||'collegato')+'</b></div><div class="kv"><span>Ultima sync</span><b>'+(c.ultima?fmtData(c.ultima.slice(0,10))+' '+c.ultima.slice(11,16)+' UTC':'mai')+'</b></div><div class="kv"><span>Da inviare</span><b>'+c.pendenti.length+'</b></div><div class="row" style="margin-top:8px"><button class="primary" data-a="sync-ora">Sincronizza ora</button><button class="danger" data-a="sync-scollega" style="flex:0 0 auto">Scollega</button></div></div>'
+    ?'<div class="card"><div class="kv"><span>Stato</span><b>'+esc(syncStato||'collegato')+'</b></div><div class="kv"><span>Ultima sync</span><b>'+(c.ultima?fmtData(c.ultima.slice(0,10))+' '+c.ultima.slice(11,16)+' UTC':'mai')+'</b></div><div class="kv"><span>Da inviare</span><b>'+c.pendenti.length+'</b></div><div class="row" style="margin-top:8px"><button class="primary" data-a="sync-ora">Sincronizza ora</button><button data-a="invita">Invita un socio</button><button class="danger" data-a="sync-scollega" style="flex:0 0 auto">Scollega</button></div><div class="s" style="margin-top:6px">Invito = link con il token dentro: chi lo ha vede e scrive gli stessi dati. Solo a persone fidate.</div></div>'
     :'<div class="card"><div class="s">Incolla il token del server e collega: da lì ogni raccolta viene copiata sul VPS appena c\'è rete.</div><input type="text" id="f-token" placeholder="token" autocomplete="off" autocapitalize="off" spellcheck="false" style="margin-top:8px"><div class="row" style="margin-top:8px"><button class="primary" data-a="sync-collega">Collega</button></div></div>';
   el.innerHTML='<h2>Server</h2>'+server
   +'<h2>Vivai <span class="s">· tocca il nome per la quota nostra</span></h2>'+listaVivai()+'<div class="right" style="margin-top:4px"><button class="ghost mini" data-a="imp-vivaio-add">+ vivaio</button></div>'
@@ -600,6 +600,9 @@ document.body.addEventListener('click',async e=>{ const b=e.target.closest('[dat
     case 'vista-quota': vistaQuota=v; render(); break;
     case 'sync-collega': { const t=(document.getElementById('f-token').value||'').trim(); if(!t){ toast('Token vuoto'); break; } const c=syncCfg(); c.token=t; c.lastSeq=0; c.pendenti=E.map(e=>e.id); await salvaImp(); await sync(); render(); break; }
     case 'sync-ora': await sync(); render(); break;
+    case 'invita': { const url=location.origin+location.pathname+'#t='+syncCfg().token; const testo='Registro raccolta: apri questo link, poi in Chrome menu ⋮ → Aggiungi a schermata Home. Il link contiene la chiave, non inoltrarlo.\n'+url;
+      if(navigator.share){ try{ await navigator.share({title:'Registro raccolta',text:testo}); break; }catch(e){ if(e&&e.name==='AbortError') break; } }
+      try{ await navigator.clipboard.writeText(testo); toast('Invito copiato: incollalo in WhatsApp'); }catch(e){ window.prompt('Copia il link',url); } break; }
     case 'csv': await scaricaCsv(); break;
     case 'sync-scollega': if(window.confirm('Scollegare il server? I dati restano sul telefono e sul server.')){ const c=syncCfg(); c.token=''; syncStato=''; await salvaImp(); render(); } break;
     case 'modifica-gruppo': { if(F.righe.length&&!window.confirm('Hai una raccolta in corso non salvata: la scarto?')) break; const f=formDaGruppo(v); if(!f){ toast('Raccolta non trovata'); break; } F=f; vista='nuova'; render(); window.scrollTo(0,0); break; }
@@ -630,6 +633,7 @@ document.body.addEventListener('change',async e=>{ const t=e.target;
   if(!S.device){ S.device='tel-'+Math.random().toString(36).slice(2,6); }
   await salvaImp();
   E=await DB.all('eventi'); E.sort((a,b)=>String(a.ts).localeCompare(String(b.ts)));
+  const hm=(location.hash||'').match(/[#&]t=([A-Za-z0-9._-]{6,})/); if(hm){ const c=syncCfg(); c.token=hm[1]; c.lastSeq=0; c.pendenti=E.map(e=>e.id); await salvaImp(); history.replaceState(null,'',location.pathname); toast('Server collegato dal link'); }
   try{ if(navigator.storage&&navigator.storage.persist) persisted=await navigator.storage.persist(); }catch(e){}
   if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
   F=nuovoForm(); render(); sync();
