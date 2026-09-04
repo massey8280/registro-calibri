@@ -200,7 +200,7 @@ table.gen th.nos{color:var(--accent)}
 
 <script>
 'use strict';
-const VERSION='0.9.2';
+const VERSION='0.10.0';
 const CALIBRI=['grossa','mezzana','semina','mista'];
 const NOME={grossa:'Grossa',mezzana:'Mezzana',semina:'Semina',mista:'Mista'};
 const DEST_DEFAULT={grossa:'venduta',mezzana:'riseminata',semina:'riseminata',mista:'riseminata'};
@@ -365,13 +365,28 @@ async function sync(){ const c=syncCfg(); if(!c.token){ syncStato=''; renderBadg
       const r=await api('eventi/',{method:'POST',body:JSON.stringify({eventi:evs})}); const ok=new Set(r.accettati);
       c.pendenti=c.pendenti.filter(i=>!ok.has(i)&&byId.has(i)); await salvaImp(); if(!r.accettati.length) break; }
     for(let giro=0; giro<20; giro++){ const r=await api('eventi/?since='+c.lastSeq); const loc=new Set(E.map(e=>e.id)); const fresh=r.eventi.filter(e=>e&&typeof e.id==='string'&&!loc.has(e.id));
-      if(fresh.length){ nuovi+=await DB.addMany('eventi',fresh); E=await DB.all('eventi'); E.sort((a,b)=>String(a.ts).localeCompare(String(b.ts))); }
+      if(fresh.length){ nuovi+=await DB.addMany('eventi',fresh); E=await DB.all('eventi'); E.sort((a,b)=>String(a.ts).localeCompare(String(b.ts))); applicaConfig(); }
       c.lastSeq=r.seq; await salvaImp(); if(!r.altro) break; }
     c.ultima=new Date().toISOString(); syncStato=c.pendenti.length?c.pendenti.length+' da inviare':'sincronizzato'; await salvaImp();
-    if(nuovi&&vista!=='nuova') render(); else renderBadge();
+    if(nuovi&&(vista!=='nuova'||!F.righe.length)) render(); else renderBadge();
   }catch(e){ syncStato='errore: '+(e&&e.message?e.message:e); renderBadge(); }
   finally{ syncInCorso=false; } }
 function accoda(ids){ const c=syncCfg(); c.pendenti.push(...ids); }
+// configurazione condivisa: eventi tipo 'config', applicati in ordine di tempo (l'ultimo vince)
+function applicaConfig(){ const vivai=[]; const comp=[]; let fattore=25; let tara=null;
+  const evs=E.filter(e=>e.tipo==='config').sort((a,b)=>(String(a.ts)+a.id).localeCompare(String(b.ts)+b.id));
+  for(const e of evs){ if(e.chiave==='vivaio'){ const i=vivai.findIndex(v=>v.nome===e.nome); if(e.azione==='del'){ if(i>=0) vivai.splice(i,1); } else { const v={nome:e.nome,quota_pct:e.quota_pct==null?100:e.quota_pct}; if(i>=0) vivai[i]=v; else vivai.push(v); } }
+    else if(e.chiave==='compratore'){ const i=comp.indexOf(e.nome); if(e.azione==='del'){ if(i>=0) comp.splice(i,1); } else if(i<0) comp.push(e.nome); }
+    else if(e.chiave==='fattore_coffa'&&e.valore>0) fattore=e.valore; else if(e.chiave==='tara_collo') tara=e.valore; }
+  S.vivai=vivai; S.compratori=comp; S.fattore_coffa=fattore; S.tara_collo=tara; }
+async function config(campi){ const ev=Object.assign({id:uuid(),ts:new Date().toISOString(),device:S.device,tipo:'config'},campi);
+  try{ await DB.putMany('eventi',[ev]); E.push(ev); accoda([ev.id]); applicaConfig(); await salvaImp(); sync(); }catch(e){ toast('Non salvato: '+(e&&e.message?e.message:e)); } }
+async function migraConfigLocale(){ if(E.some(e=>e.tipo==='config')) return; const evs=[]; const ts=new Date().toISOString(); const mk=c=>Object.assign({id:uuid(),ts,device:S.device,tipo:'config'},c);
+  normVivai(S.vivai).forEach(v=>evs.push(mk({chiave:'vivaio',nome:v.nome,quota_pct:v.quota_pct,azione:'set'})));
+  (S.compratori||[]).forEach(c=>evs.push(mk({chiave:'compratore',nome:c,azione:'set'})));
+  if(S.fattore_coffa&&S.fattore_coffa!==25) evs.push(mk({chiave:'fattore_coffa',valore:S.fattore_coffa}));
+  if(S.tara_collo!=null) evs.push(mk({chiave:'tara_collo',valore:S.tara_collo}));
+  if(!evs.length) return; await DB.putMany('eventi',evs); E.push(...evs); accoda(evs.map(e=>e.id)); await salvaImp(); }
 function nomiVivai(){ return S.vivai.map(v=>v.nome); }
 
 // ----- helper html -----
@@ -505,7 +520,7 @@ function renderImpostazioni(){ const el=document.getElementById('v-impostazioni'
     ?'<div class="card"><div class="kv"><span>Stato</span><b>'+esc(syncStato||'collegato')+'</b></div><div class="kv"><span>Ultima sync</span><b>'+(c.ultima?fmtData(c.ultima.slice(0,10))+' '+c.ultima.slice(11,16)+' UTC':'mai')+'</b></div><div class="kv"><span>Da inviare</span><b>'+c.pendenti.length+'</b></div><div class="row" style="margin-top:8px"><button class="primary" data-a="sync-ora">Sincronizza ora</button><button data-a="invita">Invita un socio</button><button class="danger" data-a="sync-scollega" style="flex:0 0 auto">Scollega</button></div><div class="s" style="margin-top:6px">Invito = link con il token dentro: chi lo ha vede e scrive gli stessi dati. Solo a persone fidate.</div></div>'
     :'<div class="card"><div class="s">Incolla il token del server e collega: da lì ogni raccolta viene copiata sul VPS appena c\'è rete.</div><input type="text" id="f-token" placeholder="token" autocomplete="off" autocapitalize="off" spellcheck="false" style="margin-top:8px"><div class="row" style="margin-top:8px"><button class="primary" data-a="sync-collega">Collega</button></div></div>';
   el.innerHTML='<h2>Server</h2>'+server
-  +'<h2>Vivai <span class="s">· tocca il nome per la quota nostra</span></h2>'+listaVivai()+'<div class="right" style="margin-top:4px"><button class="ghost mini" data-a="imp-vivaio-add">+ vivaio</button></div>'
+  +'<h2>Vivai <span class="s">· tocca il nome per la quota nostra · condivisi con tutti i dispositivi</span></h2>'+listaVivai()+'<div class="right" style="margin-top:4px"><button class="ghost mini" data-a="imp-vivaio-add">+ vivaio</button></div>'
   +'<h2>Compratori</h2>'+listaComp()+'<div class="right" style="margin-top:4px"><button class="ghost mini" data-a="imp-comp-add">+ compratore</button></div>'
   +'<h2>Conversioni</h2>'+fieldBtn('1 coffa =',fmt(S.fattore_coffa,1)+' kg','imp-fattore')+fieldBtn('Tara per collo',S.tara_collo==null?'?':fmt(S.tara_collo,2)+' kg','imp-tara')
   +'<h2>Aspetto</h2><div class="chips">'+btn('Compatta','densita',{v:'compatta'},S.densita!=='barca'?'on':'')+btn('Barca: tutto più grande','densita',{v:'barca'},S.densita==='barca'?'on':'')+'</div>'
@@ -541,8 +556,8 @@ async function annullaGruppo(g){ const ann=new Set(E.filter(e=>e.tipo==='annulla
   const ts=new Date().toISOString(); const evs=targets.map(t=>({id:uuid(),ts,device:S.device,tipo:'annulla',annulla_id:t.id,gruppo:g}));
   try{ await DB.putMany('eventi',evs); E.push(...evs); accoda(evs.map(e=>e.id)); await salvaImp(); sync(); toast('Raccolta annullata'); render(); }catch(e){ toast('Non annullata: '+(e&&e.message?e.message:e)); } }
 async function nuovoNome(titolo,lista){ const n=(window.prompt(titolo)||'').trim(); if(!n) return null;
-  if(lista==='vivai'){ if(!S.vivai.some(v=>v.nome===n)){ S.vivai.push({nome:n,quota_pct:100}); await salvaImp(); } }
-  else if(!S.compratori.includes(n)){ S.compratori.push(n); await salvaImp(); } return n; }
+  if(lista==='vivai'){ if(!S.vivai.some(v=>v.nome===n)) await config({chiave:'vivaio',nome:n,quota_pct:100,azione:'set'}); }
+  else if(!S.compratori.includes(n)) await config({chiave:'compratore',nome:n,azione:'set'}); return n; }
 
 // ----- export / import -----
 async function esporta(){ const payload={schema:1,app:'registro-raccolta',versione:VERSION,esportato_il:new Date().toISOString(),device:S.device,impostazioni:Object.assign({},S,{sync:Object.assign({},syncCfg(),{token:''})}),eventi:E};
@@ -551,10 +566,11 @@ async function esporta(){ const payload={schema:1,app:'registro-raccolta',versio
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'})); a.download=name; document.body.appendChild(a); a.click(); a.remove(); toast('File scaricato: '+name); }
 async function importa(file){ let p; try{ p=JSON.parse(await file.text()); }catch(e){ toast('File non leggibile: non è JSON'); return; }
   const list=Array.isArray(p)?p:(p&&p.eventi); if(!Array.isArray(list)){ toast('Nel file non c\'è la lista "eventi"'); return; }
-  const validi=list.filter(e=>e&&typeof e.id==='string'&&(e.tipo==='raccolta'||e.tipo==='annulla'));
+  const validi=list.filter(e=>e&&typeof e.id==='string'&&(e.tipo==='raccolta'||e.tipo==='annulla'||e.tipo==='config'));
   let n=0; try{ n=await DB.addMany('eventi',validi); }catch(e){ toast('Import fallito: '+(e&&e.message?e.message:e)); return; }
-  if(p&&p.impostazioni){ normVivai(p.impostazioni.vivai).forEach(v=>{ if(!S.vivai.some(x=>x.nome===v.nome)) S.vivai.push(v); }); S.compratori=[...new Set(S.compratori.concat(p.impostazioni.compratori||[]))]; await salvaImp(); }
   E=await DB.all('eventi'); E.sort((a,b)=>String(a.ts).localeCompare(String(b.ts)));
+  if(p&&p.impostazioni&&!E.some(e=>e.tipo==='config')){ S.vivai=normVivai(p.impostazioni.vivai); S.compratori=p.impostazioni.compratori||[]; S.fattore_coffa=p.impostazioni.fattore_coffa||25; S.tara_collo=p.impostazioni.tara_collo==null?null:p.impostazioni.tara_collo; await migraConfigLocale(); }
+  applicaConfig(); await salvaImp();
   accoda(validi.map(e=>e.id)); await salvaImp(); sync();
   toast('Importati '+n+' eventi nuovi, '+(validi.length-n)+' già presenti'); render(); }
 
@@ -630,13 +646,13 @@ document.body.addEventListener('click',async e=>{ const b=e.target.closest('[dat
     case 'modifica-gruppo': { if(F.righe.length&&!window.confirm('Hai una raccolta in corso non salvata: la scarto?')) break; const f=formDaGruppo(v); if(!f){ toast('Raccolta non trovata'); break; } F=f; vista='nuova'; render(); window.scrollTo(0,0); break; }
     case 'annulla-gruppo': if(window.confirm('Annullare questa raccolta? Resta nello storico come annullata.')) await annullaGruppo(v); break;
     case 'densita': S.densita=v; await salvaImp(); render(); break;
-    case 'imp-fattore': Pad.open('1 coffa = ? kg',S.fattore_coffa,async n=>{ if(n&&n>0){ S.fattore_coffa=n; await salvaImp(); render(); } else toast('Serve un numero maggiore di 0'); },{dec:1}); break;
-    case 'imp-tara': Pad.open('Tara per collo (kg)',S.tara_collo,async n=>{ S.tara_collo=n; await salvaImp(); render(); }); break;
+    case 'imp-fattore': Pad.open('1 coffa = ? kg',S.fattore_coffa,async n=>{ if(n&&n>0){ await config({chiave:'fattore_coffa',valore:n}); render(); } else toast('Serve un numero maggiore di 0'); },{dec:1}); break;
+    case 'imp-tara': Pad.open('Tara per collo (kg)',S.tara_collo,async n=>{ await config({chiave:'tara_collo',valore:n}); render(); }); break;
     case 'imp-vivaio-add': await nuovoNome('Nome del vivaio','vivai'); render(); break;
-    case 'imp-vivaio-quota': { const vv=S.vivai.find(x=>x.nome===v); if(!vv) break; Pad.open('Quota nostra a '+v+' (%)',vv.quota_pct,async n=>{ if(n!=null&&n>0&&n<=100){ vv.quota_pct=n; await salvaImp(); render(); } else toast('Quota fra 1 e 100'); },{dec:1}); break; }
-    case 'imp-vivaio-del': if(window.confirm('Togliere "'+v+'" dalla lista? Gli eventi già salvati non cambiano.')){ S.vivai=S.vivai.filter(x=>x.nome!==v); await salvaImp(); render(); } break;
+    case 'imp-vivaio-quota': { const vv=S.vivai.find(x=>x.nome===v); if(!vv) break; Pad.open('Quota nostra a '+v+' (%)',vv.quota_pct,async n=>{ if(n!=null&&n>0&&n<=100){ await config({chiave:'vivaio',nome:v,quota_pct:n,azione:'set'}); render(); } else toast('Quota fra 1 e 100'); },{dec:1}); break; }
+    case 'imp-vivaio-del': if(window.confirm('Togliere "'+v+'" dalla lista su tutti i dispositivi? Le raccolte già salvate non cambiano.')){ await config({chiave:'vivaio',nome:v,azione:'del'}); render(); } break;
     case 'imp-comp-add': await nuovoNome('Nome del compratore','compratori'); render(); break;
-    case 'imp-comp-del': if(window.confirm('Togliere "'+v+'" dalla lista? Gli eventi già salvati non cambiano.')){ S.compratori=S.compratori.filter(x=>x!==v); await salvaImp(); render(); } break;
+    case 'imp-comp-del': if(window.confirm('Togliere "'+v+'" dalla lista su tutti i dispositivi? Le raccolte già salvate non cambiano.')){ await config({chiave:'compratore',nome:v,azione:'del'}); render(); } break;
     case 'esporta': await esporta(); break;
     case 'importa': document.getElementById('f-import').click(); break;
     case 'noop': break;
@@ -658,7 +674,9 @@ document.body.addEventListener('change',async e=>{ const t=e.target;
   const hm=(location.hash||'').match(/[#&]t=([A-Za-z0-9._-]{6,})/); if(hm){ const c=syncCfg(); c.token=hm[1]; c.lastSeq=0; c.pendenti=E.map(e=>e.id); await salvaImp(); history.replaceState(null,'',location.pathname); toast('Server collegato dal link'); }
   try{ if(navigator.storage&&navigator.storage.persist) persisted=await navigator.storage.persist(); }catch(e){}
   if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  applicaConfig(); await migraConfigLocale(); applicaConfig();
   F=nuovoForm(); render(); sync();
+  setInterval(()=>{ if(document.visibilityState==='visible'&&navigator.onLine) sync(); },10000);
   window.addEventListener('online',()=>sync()); document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') sync(); });
 })();
 </script>
