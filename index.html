@@ -119,6 +119,7 @@ table.gen th.nos{color:var(--accent)}
 .ev::before{content:'';position:absolute;left:0;top:11px;width:6px;height:6px;border-radius:50%;background:var(--line)}
 .ev.grossa::before{background:var(--grossa)} .ev.mezzana::before{background:var(--mezzana)} .ev.semina::before{background:var(--semina)} .ev.mista::before{background:var(--mista)}
 .ev.ann,.grp.ann .ev{text-decoration:line-through;color:var(--muted)}
+button.inc{border-color:var(--salva);color:var(--salva);margin-left:6px;vertical-align:middle}
 .grp.ann{background:transparent;border-style:dashed}
 .lista{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .lista .it{display:flex;align-items:center;gap:8px;min-height:var(--tap);padding:0 6px 0 14px;border-bottom:1px solid var(--line)}
@@ -200,7 +201,7 @@ table.gen th.nos{color:var(--accent)}
 
 <script>
 'use strict';
-const VERSION='0.10.2';
+const VERSION='0.10.3';
 const CALIBRI=['grossa','mezzana','semina','mista'];
 const NOME={grossa:'Grossa',mezzana:'Mezzana',semina:'Semina',mista:'Mista'};
 const ORD={grossa:0,mezzana:1,semina:2,mista:3};
@@ -503,14 +504,15 @@ function renderTotali(){ const el=document.getElementById('v-totali'); const ogg
 
 function renderRegistro(){ const el=document.getElementById('v-registro'); const ann=new Set(E.filter(e=>e.tipo==='annulla').map(e=>e.annulla_id)); const racc=E.filter(e=>e.tipo==='raccolta');
   if(!racc.length){ el.innerHTML='<div class="empty">Registro vuoto. La prima raccolta comparirà qui.</div>'; return; }
-  const G={}; racc.forEach(e=>{ (G[e.gruppo]||(G[e.gruppo]=[])).push(e); });
+  const sostituiti=new Set(racc.filter(e=>e.sostituisce_id).map(e=>e.sostituisce_id));
+  const G={}; racc.forEach(e=>{ if(ann.has(e.id)&&sostituiti.has(e.id)) return; (G[e.gruppo]||(G[e.gruppo]=[])).push(e); });
   const tutti=Object.values(G).sort((a,b)=>(b[0].data+b[0].ts).localeCompare(a[0].data+a[0].ts));
   const nAnn=tutti.filter(g=>g.every(e=>ann.has(e.id))).length;
   const gruppi=mostraAnn?tutti:tutti.filter(g=>!g.every(e=>ann.has(e.id)));
   const testa=nAnn?'<div class="chips" style="margin-bottom:4px">'+btn(mostraAnn?'Nascondi annullate':'Mostra annullate ('+nAnn+')','toggle-ann',{},mostraAnn?'on':'')+'</div>':'';
   el.innerHTML=testa+gruppi.map(g=>{ const e0=g[0]; const tuttiAnn=g.every(e=>ann.has(e.id));
     const righe=g.slice().sort((a,b)=>(ORD[a.calibro]==null?9:ORD[a.calibro])-(ORD[b.calibro]==null?9:ORD[b.calibro])).map(e=>{ const a=ann.has(e.id); let d='';
-      if(e.dest==='venduta') d='venduta a '+esc(e.compratore||'?')+(e.prezzo_kg!=null?' · '+fmt(e.prezzo_kg,2)+' €/kg':' · prezzo ?')+(e.incassata_il?' · incassata':'');
+      if(e.dest==='venduta') d='venduta a '+esc(e.compratore||'?')+(e.prezzo_kg!=null?' · '+fmt(e.prezzo_kg,2)+' €/kg':' · prezzo ?')+(e.incassata_il?' · incassata '+fmtData(e.incassata_il).slice(0,5):(!a?' <button class="mini inc" data-a="incassato" data-v="'+e.id+'">Incassato</button>':' · da incassare'));
       else if(e.dest==='riseminata') d='riseminata in '+esc(e.dest_vivaio||'?'); else d='da assegnare';
       const m=e.calibro==='mista'?(e.split_mezzana_pct!=null?' (≈'+fmt(e.split_mezzana_pct,0)+' % mezz.)':' (split ?)'):'';
       const lordo=e.lordo_kg!=null?' <span class="s">(lordo '+fmt(e.lordo_kg,2)+', '+fmt(e.colli,0)+' colli)</span>':'';
@@ -559,6 +561,10 @@ async function salva(){ const err=validaPasso1()||validaPasso2(); if(err){ toast
     extra=old.map(t=>({id:uuid(),ts,device:S.device,tipo:'annulla',annulla_id:t.id,gruppo:g,motivo:'modifica'})); ev.forEach(e=>{ e.sostituisce_gruppo=g; }); }
   try{ await DB.putMany('eventi',extra.concat(ev)); E.push(...extra,...ev); accoda(extra.concat(ev).map(e=>e.id)); await salvaImp(); sync(); const mod=!!F.sostituisce_gruppo; F=nuovoForm(); toast(mod?'Modifica salvata':'Salvata: '+ev.length+(ev.length===1?' evento':' eventi')); render(); window.scrollTo(0,0); }
   catch(e){ toast('Non salvato: '+(e&&e.message?e.message:e)); } }
+async function segnaIncassato(id){ const e=E.find(x=>x.id===id&&x.tipo==='raccolta'); if(!e) return; const ts=new Date().toISOString();
+  const nuovo=Object.assign({},e,{id:uuid(),ts,device:S.device,incassata_il:oggiISO(),sostituisce_id:e.id});
+  const ann={id:uuid(),ts,device:S.device,tipo:'annulla',annulla_id:e.id,gruppo:e.gruppo,motivo:'incasso'};
+  try{ await DB.putMany('eventi',[ann,nuovo]); E.push(ann,nuovo); accoda([ann.id,nuovo.id]); await salvaImp(); sync(); toast('Segnata incassata'); render(); }catch(err){ toast('Non salvato: '+(err&&err.message?err.message:err)); } }
 async function annullaGruppo(g){ const ann=new Set(E.filter(e=>e.tipo==='annulla').map(e=>e.annulla_id)); const targets=E.filter(e=>e.tipo==='raccolta'&&e.gruppo===g&&!ann.has(e.id)); if(!targets.length) return;
   const ts=new Date().toISOString(); const evs=targets.map(t=>({id:uuid(),ts,device:S.device,tipo:'annulla',annulla_id:t.id,gruppo:g}));
   try{ await DB.putMany('eventi',evs); E.push(...evs); accoda(evs.map(e=>e.id)); await salvaImp(); sync(); toast('Raccolta annullata'); render(); }catch(e){ toast('Non annullata: '+(e&&e.message?e.message:e)); } }
@@ -652,6 +658,7 @@ document.body.addEventListener('click',async e=>{ const b=e.target.closest('[dat
     case 'sync-scollega': if(window.confirm('Scollegare il server? I dati restano sul telefono e sul server.')){ const c=syncCfg(); c.token=''; syncStato=''; await salvaImp(); render(); } break;
     case 'modifica-gruppo': { if(F.righe.length&&!window.confirm('Hai una raccolta in corso non salvata: la scarto?')) break; const f=formDaGruppo(v); if(!f){ toast('Raccolta non trovata'); break; } F=f; vista='nuova'; render(); window.scrollTo(0,0); break; }
     case 'annulla-gruppo': if(window.confirm('Annullare questa raccolta? Resta nello storico come annullata.')) await annullaGruppo(v); break;
+    case 'incassato': await segnaIncassato(v); break;
     case 'densita': S.densita=v; await salvaImp(); render(); break;
     case 'imp-fattore': Pad.open('1 coffa = ? kg',S.fattore_coffa,async n=>{ if(n&&n>0){ await config({chiave:'fattore_coffa',valore:n}); render(); } else toast('Serve un numero maggiore di 0'); },{dec:1}); break;
     case 'imp-tara': Pad.open('Tara per collo (kg)',S.tara_collo,async n=>{ await config({chiave:'tara_collo',valore:n}); render(); }); break;
