@@ -201,7 +201,7 @@ button.inc{border-color:var(--salva);color:var(--salva);margin-left:6px;vertical
 
 <script>
 'use strict';
-const VERSION='0.10.3';
+const VERSION='0.11.0';
 const CALIBRI=['grossa','mezzana','semina','mista'];
 const NOME={grossa:'Grossa',mezzana:'Mezzana',semina:'Semina',mista:'Mista'};
 const ORD={grossa:0,mezzana:1,semina:2,mista:3};
@@ -337,7 +337,7 @@ const DB={ db:null,
 
 // ----- stato -----
 let S={device:'',fattore_coffa:25,tara_collo:null,vivai:[],compratori:[],densita:'compatta'};
-let E=[]; let vista='nuova'; let filtro='tutto'; let persisted=null; let mostraAnn=false; let vistaQuota='nostra';
+let E=[]; let vista='nuova'; let filtro='tutto'; let persisted=null; let mostraAnn=false; let vistaQuota='nostra'; let regF={vivaio:null,compratore:null,calibro:null}; let regFiltriApri=false;
 function nuovaRiga(){ return {calibro:null,qta:null,unita:'kg',split:null,lordo:null,colli:null,tara:null,dest:[]}; }
 function nuovaPort(dest){ return {dest,qta:null,vivaio:'?',compratore:'?',prezzo:null,incassata:false}; }
 function ultimoEv(calibro){ let best=null; for(const e of E){ if(e.tipo==='raccolta'&&e.calibro===calibro&&(!best||String(e.ts)>String(best.ts))) best=e; } return best; }
@@ -504,21 +504,28 @@ function renderTotali(){ const el=document.getElementById('v-totali'); const ogg
 
 function renderRegistro(){ const el=document.getElementById('v-registro'); const ann=new Set(E.filter(e=>e.tipo==='annulla').map(e=>e.annulla_id)); const racc=E.filter(e=>e.tipo==='raccolta');
   if(!racc.length){ el.innerHTML='<div class="empty">Registro vuoto. La prima raccolta comparirà qui.</div>'; return; }
-  const sostituiti=new Set(racc.filter(e=>e.sostituisce_id).map(e=>e.sostituisce_id));
+  const sostituiti=new Set(racc.filter(e=>e.sostituisce_id).map(e=>e.sostituisce_id)); const superati=new Set(racc.filter(e=>e.sostituisce_gruppo).map(e=>e.sostituisce_gruppo)); const ripristinati=new Set(racc.filter(e=>e.ripristino_di).map(e=>e.ripristino_di));
   const G={}; racc.forEach(e=>{ if(ann.has(e.id)&&sostituiti.has(e.id)) return; (G[e.gruppo]||(G[e.gruppo]=[])).push(e); });
   const tutti=Object.values(G).sort((a,b)=>(b[0].data+b[0].ts).localeCompare(a[0].data+a[0].ts));
-  const nAnn=tutti.filter(g=>g.every(e=>ann.has(e.id))).length;
-  const gruppi=mostraAnn?tutti:tutti.filter(g=>!g.every(e=>ann.has(e.id)));
-  const testa=nAnn?'<div class="chips" style="margin-bottom:4px">'+btn(mostraAnn?'Nascondi annullate':'Mostra annullate ('+nAnn+')','toggle-ann',{},mostraAnn?'on':'')+'</div>':'';
-  el.innerHTML=testa+gruppi.map(g=>{ const e0=g[0]; const tuttiAnn=g.every(e=>ann.has(e.id));
+  const attivi=tutti.filter(g=>!g.every(e=>ann.has(e.id)));
+  const cestino=tutti.filter(g=>g.every(e=>ann.has(e.id))&&!superati.has(g[0].gruppo)&&!ripristinati.has(g[0].gruppo));
+  const att=g=>g.filter(e=>!ann.has(e.id)); const passa=g=>(!regF.vivaio||att(g).some(e=>e.origine_vivaio===regF.vivaio||e.dest_vivaio===regF.vivaio))&&(!regF.compratore||att(g).some(e=>e.compratore===regF.compratore))&&(!regF.calibro||att(g).some(e=>e.calibro===regF.calibro));
+  const vis=attivi.filter(passa); const nF=[regF.vivaio,regF.compratore,regF.calibro].filter(Boolean).length;
+  const chipsF=(lab,items,key,nomi)=>'<div class="s" style="margin:8px 0 4px">'+lab+'</div><div class="chips">'+btn('Tutti','reg-f',{k:key,v:''},regF[key]?'':'on')+items.map(v=>btn(nomi?nomi[v]:esc(v),'reg-f',{k:key,v},regF[key]===v?'on':'')).join('')+'</div>';
+  const filtri='<div class="row" style="align-items:center;gap:8px"><button class="mini'+(nF?' on':'')+'" data-a="reg-filtri" style="flex:0 0 auto">Filtri'+(nF?' · '+nF:'')+'</button><span class="s">'+vis.length+(vis.length===1?' raccolta':' raccolte')+(nF?' su '+attivi.length:'')+'</span>'+(nF?'<button class="ghost mini" data-a="reg-f-reset" style="margin-left:auto">Azzera</button>':'')+'</div>'
+    +(regFiltriApri?'<div class="card" style="margin-top:8px">'+chipsF('Vivaio',nomiVivai(),'vivaio')+chipsF('Compratore',S.compratori,'compratore')+chipsF('Calibro',CALIBRI,'calibro',NOME)+'</div>':'');
+  const rendiGruppo=(g,nelCestino)=>{ const e0=g[0];
     const righe=g.slice().sort((a,b)=>(ORD[a.calibro]==null?9:ORD[a.calibro])-(ORD[b.calibro]==null?9:ORD[b.calibro])).map(e=>{ const a=ann.has(e.id); let d='';
       if(e.dest==='venduta') d='venduta a '+esc(e.compratore||'?')+(e.prezzo_kg!=null?' · '+fmt(e.prezzo_kg,2)+' €/kg':' · prezzo ?')+(e.incassata_il?' · incassata '+fmtData(e.incassata_il).slice(0,5):(!a?' <button class="mini inc" data-a="incassato" data-v="'+e.id+'">Incassato</button>':' · da incassare'));
       else if(e.dest==='riseminata') d='riseminata in '+esc(e.dest_vivaio||'?'); else d='da assegnare';
       const m=e.calibro==='mista'?(e.split_mezzana_pct!=null?' (≈'+fmt(e.split_mezzana_pct,0)+' % mezz.)':' (split ?)'):'';
       const lordo=e.lordo_kg!=null?' <span class="s">(lordo '+fmt(e.lordo_kg,2)+', '+fmt(e.colli,0)+' colli)</span>':'';
-      return '<div class="ev '+e.calibro+(a?' ann':'')+'"><b>'+NOME[e.calibro]+'</b>'+m+' '+fmt(e.qta,2)+' '+e.unita+lordo+' → '+d+'</div>'; }).join('');
-    return '<div class="grp'+(tuttiAnn?' ann':'')+'"><div class="t" style="font-size:15px">'+giornoSett(e0.data)+' '+fmtData(e0.data)+' <span class="s">· da '+esc(e0.origine_vivaio||'?')+(e0.quota_pct!==100?' · quota '+fmt(e0.quota_pct,1)+' %':'')+(e0.device?' · '+esc(e0.device):'')+'</span></div>'+righe
-    +(tuttiAnn?'<div class="s" style="margin-top:4px">annullata</div>':'<div class="right" style="gap:6px">'+(e0.sostituisce_gruppo?'<span class="s" style="align-self:center;margin-right:auto">modificata</span>':'')+'<button class="ghost mini" data-a="modifica-gruppo" data-v="'+e0.gruppo+'">Modifica</button><button class="ghost danger mini" data-a="annulla-gruppo" data-v="'+e0.gruppo+'">Annulla</button></div>')+'</div>'; }).join(''); }
+      return '<div class="ev '+e.calibro+(nelCestino?' ann':'')+'"><b>'+NOME[e.calibro]+'</b>'+m+' '+fmt(e.qta,2)+' '+e.unita+lordo+' → '+d+'</div>'; }).join('');
+    const azioni=nelCestino?'<div class="right"><button class="ghost mini" data-a="ripristina-gruppo" data-v="'+e0.gruppo+'">Ripristina</button></div>'
+      :'<div class="right" style="gap:6px">'+(e0.sostituisce_gruppo?'<span class="s" style="align-self:center;margin-right:auto">modificata</span>':'')+'<button class="ghost mini" data-a="modifica-gruppo" data-v="'+e0.gruppo+'">Modifica</button><button class="ghost danger mini" data-a="elimina-gruppo" data-v="'+e0.gruppo+'">Elimina</button></div>';
+    return '<div class="grp'+(nelCestino?' ann':'')+'"><div class="t" style="font-size:15px">'+giornoSett(e0.data)+' '+fmtData(e0.data)+' <span class="s">· da '+esc(e0.origine_vivaio||'?')+(e0.quota_pct!==100?' · quota '+fmt(e0.quota_pct,1)+' %':'')+(e0.device?' · '+esc(e0.device):'')+'</span></div>'+righe+azioni+'</div>'; };
+  el.innerHTML=filtri+(vis.length?vis.map(g=>rendiGruppo(g,false)).join(''):'<div class="empty">Nessuna raccolta con questi filtri.</div>')
+    +(cestino.length?'<div class="right" style="margin-top:16px"><button class="ghost mini" data-a="toggle-ann">'+(mostraAnn?'Nascondi cestino':'Cestino ('+cestino.length+')')+'</button></div>'+(mostraAnn?cestino.map(g=>rendiGruppo(g,true)).join(''):''):''); }
 
 function listaVivai(){ if(!S.vivai.length) return '<div class="empty" style="padding:8px 0">Nessun vivaio. Aggiungine uno.</div>';
   return '<div class="lista">'+S.vivai.map(v=>'<div class="it"><button class="nome" data-a="imp-vivaio-quota" data-v="'+esc(v.nome)+'">'+esc(v.nome)+'</button><span class="quota">quota '+fmt(v.quota_pct,1)+' %</span><button class="x" data-a="imp-vivaio-del" data-v="'+esc(v.nome)+'" aria-label="togli">✕</button></div>').join('')+'</div>'; }
@@ -565,9 +572,12 @@ async function segnaIncassato(id){ const e=E.find(x=>x.id===id&&x.tipo==='raccol
   const nuovo=Object.assign({},e,{id:uuid(),ts,device:S.device,incassata_il:oggiISO(),sostituisce_id:e.id});
   const ann={id:uuid(),ts,device:S.device,tipo:'annulla',annulla_id:e.id,gruppo:e.gruppo,motivo:'incasso'};
   try{ await DB.putMany('eventi',[ann,nuovo]); E.push(ann,nuovo); accoda([ann.id,nuovo.id]); await salvaImp(); sync(); toast('Segnata incassata'); render(); }catch(err){ toast('Non salvato: '+(err&&err.message?err.message:err)); } }
+async function ripristinaGruppo(g){ const evs=E.filter(e=>e.tipo==='raccolta'&&e.gruppo===g); if(!evs.length) return; const ts=new Date().toISOString(); const ng=uuid();
+  const nuovi=ordinaRighe(evs.slice()).map(e=>Object.assign({},e,{id:uuid(),ts,device:S.device,gruppo:ng,ripristino_di:g,sostituisce_id:null}));
+  try{ await DB.putMany('eventi',nuovi); E.push(...nuovi); accoda(nuovi.map(e=>e.id)); await salvaImp(); sync(); toast('Raccolta ripristinata'); render(); }catch(err){ toast('Non ripristinata: '+(err&&err.message?err.message:err)); } }
 async function annullaGruppo(g){ const ann=new Set(E.filter(e=>e.tipo==='annulla').map(e=>e.annulla_id)); const targets=E.filter(e=>e.tipo==='raccolta'&&e.gruppo===g&&!ann.has(e.id)); if(!targets.length) return;
   const ts=new Date().toISOString(); const evs=targets.map(t=>({id:uuid(),ts,device:S.device,tipo:'annulla',annulla_id:t.id,gruppo:g}));
-  try{ await DB.putMany('eventi',evs); E.push(...evs); accoda(evs.map(e=>e.id)); await salvaImp(); sync(); toast('Raccolta annullata'); render(); }catch(e){ toast('Non annullata: '+(e&&e.message?e.message:e)); } }
+  try{ await DB.putMany('eventi',evs); E.push(...evs); accoda(evs.map(e=>e.id)); await salvaImp(); sync(); toast('Raccolta eliminata'); render(); }catch(e){ toast('Non annullata: '+(e&&e.message?e.message:e)); } }
 async function nuovoNome(titolo,lista){ const n=(window.prompt(titolo)||'').trim(); if(!n) return null;
   if(lista==='vivai'){ if(!S.vivai.some(v=>v.nome===n)) await config({chiave:'vivaio',nome:n,quota_pct:100,azione:'set'}); }
   else if(!S.compratori.includes(n)) await config({chiave:'compratore',nome:n,azione:'set'}); return n; }
@@ -657,7 +667,11 @@ document.body.addEventListener('click',async e=>{ const b=e.target.closest('[dat
     case 'csv': await scaricaCsv(); break;
     case 'sync-scollega': if(window.confirm('Scollegare il server? I dati restano sul telefono e sul server.')){ const c=syncCfg(); c.token=''; syncStato=''; await salvaImp(); render(); } break;
     case 'modifica-gruppo': { if(F.righe.length&&!window.confirm('Hai una raccolta in corso non salvata: la scarto?')) break; const f=formDaGruppo(v); if(!f){ toast('Raccolta non trovata'); break; } F=f; vista='nuova'; render(); window.scrollTo(0,0); break; }
-    case 'annulla-gruppo': if(window.confirm('Annullare questa raccolta? Resta nello storico come annullata.')) await annullaGruppo(v); break;
+    case 'elimina-gruppo': if(window.confirm('Eliminare questa raccolta? Finisce nel cestino, si può ripristinare.')) await annullaGruppo(v); break;
+    case 'ripristina-gruppo': await ripristinaGruppo(v); break;
+    case 'reg-filtri': regFiltriApri=!regFiltriApri; render(); break;
+    case 'reg-f': regF[d.k]=v||null; render(); break;
+    case 'reg-f-reset': regF={vivaio:null,compratore:null,calibro:null}; render(); break;
     case 'incassato': await segnaIncassato(v); break;
     case 'densita': S.densita=v; await salvaImp(); render(); break;
     case 'imp-fattore': Pad.open('1 coffa = ? kg',S.fattore_coffa,async n=>{ if(n&&n>0){ await config({chiave:'fattore_coffa',valore:n}); render(); } else toast('Serve un numero maggiore di 0'); },{dec:1}); break;
