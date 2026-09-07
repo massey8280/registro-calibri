@@ -43,6 +43,7 @@ button[disabled]{opacity:.35}
 header.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 14px;position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);z-index:5}
 .badge{font-family:var(--mono);font-size:10px;color:var(--muted);white-space:nowrap;letter-spacing:.04em;background:var(--panel);border:1px solid var(--line);padding:5px 10px;border-radius:6px}
 .view{display:none}.view.on{display:block}
+.dot{position:fixed;left:50%;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:#e53935;pointer-events:none;z-index:8}
 .row{display:flex;gap:8px;flex-wrap:wrap}
 .row>button{flex:1 1 0}
 .chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
@@ -165,6 +166,7 @@ button.inc{border-color:var(--salva);color:var(--salva);margin-left:6px;vertical
 <header class="top"><h1>Registro raccolta</h1><span class="badge" id="badge"></span></header>
 <main class="wrap">
   <section class="view on" id="v-nuova">
+    <div class="dot" id="dot-nuova"></div>
     <div id="nuova-banner"></div>
     <h2>Scrivi qui</h2>
     <textarea id="f-testo" rows="2" placeholder="es. codigoro: 200 kg grossa finittica 11 incassato, 14 coffe mezzana bassamarea" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>
@@ -201,7 +203,7 @@ button.inc{border-color:var(--salva);color:var(--salva);margin-left:6px;vertical
 
 <script>
 'use strict';
-const VERSION='0.11.0';
+const VERSION='0.11.1';
 const CALIBRI=['grossa','mezzana','semina','mista'];
 const NOME={grossa:'Grossa',mezzana:'Mezzana',semina:'Semina',mista:'Mista'};
 const ORD={grossa:0,mezzana:1,semina:2,mista:3};
