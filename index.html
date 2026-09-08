@@ -201,7 +201,7 @@ button.inc{border-color:var(--salva);color:var(--salva);margin-left:6px;vertical
 
 <script>
 'use strict';
-const VERSION='0.11.2';
+const VERSION='0.11.3';
 const CALIBRI=['grossa','mezzana','semina','mista'];
 const NOME={grossa:'Grossa',mezzana:'Mezzana',semina:'Semina',mista:'Mista'};
 const ORD={grossa:0,mezzana:1,semina:2,mista:3};
@@ -344,7 +344,21 @@ function ultimoEv(calibro){ let best=null; for(const e of E){ if(e.tipo==='racco
 function portDefault(c,u){ const p=nuovaPort(DEST_DEFAULT[c]); if(u){ if(u.dest) p.dest=u.dest; if(u.dest_vivaio&&u.dest_vivaio!=='?') p.vivaio=u.dest_vivaio; if(u.compratore&&u.compratore!=='?') p.compratore=u.compratore; if(u.prezzo_kg!=null) p.prezzo=u.prezzo_kg; } return p; }
 function nuovaRigaCal(c){ const r=nuovaRiga(); r.calibro=c; const u=ultimoEv(c); r.unita=u?(u.lordo_kg!=null?'lordo':u.unita):(c==='grossa'?'kg':'coffe'); if(r.unita==='lordo') r.tara=S.tara_collo; r.dest=[portDefault(c,u)]; return r; }
 function nuovoForm(){ let last=null; for(const e of E){ if(e.tipo==='raccolta'&&(!last||String(e.ts)>String(last.ts))) last=e; } const o=last&&last.origine_vivaio?last.origine_vivaio:'?'; return {data:oggiISO(),origine:o,quota:quotaVivaio(S,o),righe:[],testo:'',daTesto:true,note:[]}; }
-function applicaTesto(){ const base=nuovoForm(); const r=interpreta(F.testo,S,oggiISO()); F.data=r.data||base.data; F.origine=r.origine||base.origine; F.quota=r.quota!=null?r.quota:(r.origine?quotaVivaio(S,r.origine):base.quota); F.righe=ordinaRighe(r.righe); F.righe.forEach(x=>{ x.chiusa=!!x.calibro&&qtaRiga(x)!=null; }); F.note=r.note; F.daTesto=true; }
+let aiStato='';
+async function parseRemote(testo){ const c=syncCfg(); if(!c.token) throw new Error('no token'); const ac=new AbortController(); const t=setTimeout(()=>ac.abort(),15000);
+  try{ const r=await fetch('./api/parse/',{method:'POST',signal:ac.signal,headers:{'Authorization':'Bearer '+c.token,'Content-Type':'application/json'},body:JSON.stringify({testo,oggi:oggiISO(),vivai:S.vivai.map(v=>v.nome),compratori:S.compratori})});
+    if(!r.ok) throw new Error('server '+r.status); return await r.json();
+  } finally { clearTimeout(t); } }
+async function applicaTesto(opt){ opt=opt||{}; const base=nuovoForm(); const testoStart=F.testo||''; let r=interpreta(testoStart,S,oggiISO()); let src='locale';
+  if(opt.remote&&syncCfg().token&&navigator.onLine&&testoStart.trim()){
+    aiStato='AI…'; renderBadge();
+    try{ r=await parseRemote(testoStart); src='ai'; }
+    catch(e){ if(!opt.silent) toast('AI non disponibile: '+String(e.message||e).slice(0,60)); }
+    aiStato=''; renderBadge();
+    if((F.testo||'')!==testoStart) return; // testo cambiato durante l'attesa: scarto
+  }
+  F.data=r.data||base.data; F.origine=r.origine||base.origine; F.quota=r.quota!=null?r.quota:(r.origine?quotaVivaio(S,r.origine):base.quota); F.righe=ordinaRighe(r.righe||[]); F.righe.forEach(x=>{ x.chiusa=!!x.calibro&&qtaRiga(x)!=null; }); F.note=r.note||[]; F.daTesto=true;
+  if(src==='ai'&&!opt.silent) toast('Interpretato con AI'); }
 let F=nuovoForm();
 function formDaGruppo(g){ const ann=new Set(E.filter(e=>e.tipo==='annulla').map(e=>e.annulla_id)); const evs=E.filter(e=>e.tipo==='raccolta'&&e.gruppo===g&&!ann.has(e.id)); if(!evs.length) return null;
   const e0=evs[0]; const F2={data:e0.data,origine:e0.origine_vivaio||'?',quota:e0.quota_pct==null?100:e0.quota_pct,righe:[],sostituisce_gruppo:g};
@@ -410,7 +424,7 @@ function render(){
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===vista));
   if(vista==='nuova') renderNuova(); else if(vista==='totali') renderTotali(); else if(vista==='registro') renderRegistro(); else renderImpostazioni();
   renderBar(); renderBadge(); }
-function renderBadge(){ const c=syncCfg(); document.getElementById('badge').textContent=eventiAttivi(E).length+' eventi · '+(c.token?(syncStato||'server'):'solo telefono'); }
+function renderBadge(){ const c=syncCfg(); document.getElementById('badge').textContent=eventiAttivi(E).length+' eventi · '+(aiStato||(c.token?(syncStato||'server'):'solo telefono')); }
 
 function renderNuova(){ document.getElementById('nuova-banner').innerHTML=bannerModifica();
   const ta=document.getElementById('f-testo'); if(document.activeElement!==ta&&ta.value!==(F.testo||'')) ta.value=F.testo||'';
@@ -622,7 +636,7 @@ document.body.addEventListener('click',async e=>{ const b=e.target.closest('[dat
   const R=i!=null?F.righe[i]:null; const P=(R&&j!=null)?R.dest[j]:null;
   if(vista==='nuova'&&/^(riga-|p-|add-riga|set-|nuovo-)/.test(d.a)) F.daTesto=false;
   switch(d.a){
-    case 'rileggi': applicaTesto(); render(); break;
+    case 'rileggi': await applicaTesto({remote:true}); render(); break;
     case 'tab': vista=v; render(); window.scrollTo(0,0); break;
     case 'set-origine': F.origine=v; F.quota=quotaVivaio(S,v); render(); break;
     case 'nuovo-vivaio-orig': { const n=await nuovoNome('Nome del vivaio','vivai'); if(n){ F.origine=n; F.quota=quotaVivaio(S,n); } render(); break; }
@@ -685,7 +699,7 @@ document.body.addEventListener('click',async e=>{ const b=e.target.closest('[dat
     case 'importa': document.getElementById('f-import').click(); break;
     case 'noop': break;
   } });
-let testoT=null; document.getElementById('f-testo').addEventListener('input',e=>{ F.testo=e.target.value; clearTimeout(testoT); testoT=setTimeout(()=>{ if(F.daTesto||!F.righe.length){ applicaTesto(); render(); } else { F.note=[]; render(); } },300); });
+let testoT=null,aiT=null; document.getElementById('f-testo').addEventListener('input',e=>{ F.testo=e.target.value; clearTimeout(testoT); clearTimeout(aiT); testoT=setTimeout(async ()=>{ if(F.daTesto||!F.righe.length){ await applicaTesto(); render(); } else { F.note=[]; render(); } },300); aiT=setTimeout(async ()=>{ if(!(F.daTesto||!F.righe.length)) return; if(!(F.testo||'').trim()) return; if(!syncCfg().token||!navigator.onLine) return; await applicaTesto({remote:true,silent:true}); render(); },1500); });
 document.body.addEventListener('change',async e=>{ const t=e.target;
   if(t.id==='f-data'){ if(t.value) F.data=t.value; }
   else if(t.id==='f-device'){ S.device=t.value.trim(); await salvaImp(); }
